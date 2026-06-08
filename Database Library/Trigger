@@ -1,0 +1,57 @@
+penyesuaian tabel
+-- Hapus foreign key lama
+ALTER TABLE `riwayat_aktivitas`
+DROP FOREIGN KEY `fk_ra_anggota`;
+
+-- Ubah kolom id_anggota agar boleh NULL dan tambahkan nilai ENUM baru
+ALTER TABLE `riwayat_aktivitas`
+MODIFY `id_anggota` int(11) NULL,
+MODIFY `tipe_aksi` enum('login','pinjam','kembali','bayar_denda','daftar','hapus_anggota','tambah_buku','hapus_buku') NOT NULL;
+
+-- Tambahkan kembali foreign key dengan aturan ON DELETE SET NULL
+ALTER TABLE `riwayat_aktivitas`
+ADD CONSTRAINT `fk_ra_anggota` FOREIGN KEY (`id_anggota`) REFERENCES `anggota` (`id_anggota`) ON DELETE SET NULL;
+
+A. Trigger Anggota Masuk (Mendaftar)
+DELIMITER $$
+CREATE TRIGGER trg_setelah_insert_anggota
+AFTER INSERT ON `anggota`
+FOR EACH ROW
+BEGIN
+    INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
+    VALUES (NEW.id_anggota, 'daftar', CONCAT('Anggota baru mendaftar: ', NEW.nama, ' (ID: ', NEW.id_anggota, ')'));
+END$$
+DELIMITER ;
+
+B. Trigger Anggota Keluar (Dihapus)
+DELIMITER $$
+CREATE TRIGGER trg_sebelum_delete_anggota
+BEFORE DELETE ON `anggota`
+FOR EACH ROW
+BEGIN
+    INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
+    VALUES (NULL, 'hapus_anggota', CONCAT('Data anggota dihapus: ', OLD.nama, ' (ID Lama: ', OLD.id_anggota, ')'));
+END$$
+DELIMITER ;
+
+C. Trigger Buku Didaftarkan (Ditambah)
+DELIMITER $$
+CREATE TRIGGER trg_setelah_insert_buku
+AFTER INSERT ON `buku`
+FOR EACH ROW
+BEGIN
+    INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
+    VALUES (NULL, 'tambah_buku', CONCAT('Buku baru ditambahkan: ', NEW.judul, ' (ISBN: ', IFNULL(NEW.isbn, '-'), ')'));
+END$$
+DELIMITER ;
+
+D. Trigger Buku Dihapus
+DELIMITER $$
+CREATE TRIGGER trg_sebelum_delete_buku
+BEFORE DELETE ON `buku`
+FOR EACH ROW
+BEGIN
+    INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
+    VALUES (NULL, 'hapus_buku', CONCAT('Buku dihapus: ', OLD.judul, ' (ID Buku: ', OLD.id_buku, ')'));
+END$$
+DELIMITER ;
