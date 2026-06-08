@@ -1,0 +1,7 @@
+INSERT INTO kategori (nama_kategori, deskripsi) VALUES
+('Drama', 'Karya yang berfokus pada konflik emosional dan hubungan antar karakter, seringkali mengandung unsur kehidupan nyata yang mengharukan.'),
+('Romance','Kisah percintaan yang mengeksplorasi hubungan romantis antar tokoh, biasanya berakhir dengan kebahagiaan atau pelajaran tentang cinta.'),
+('Fantasy' , 'Karya fiksi yang menampilkan dunia imajinatif dengan elemen magis, makhluk mitologis, dan hukum alam yang berbeda dari dunia nyata.'),
+('Sci-Fi', 'Fiksi ilmiah yang mengeksplorasi dampak teknologi, sains, dan penemuan masa depan terhadap kehidupan manusia dan alam semesta.'),
+('Adventure', 'Kisah penuh aksi dan penjelajahan di mana tokoh menghadapi berbagai tantangan dan bahaya dalam perjalanan menuju tujuannya.'),
+('Cartoon', 'Karya bergambar atau animasi yang menyampaikan cerita secara visual, sering ditujukan untuk hiburan anak-anak maupun remaja.')
