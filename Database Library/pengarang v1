@@ -1,0 +1,45 @@
+INSERT INTO Pengarang (nama, biografi) VALUES
+-- Drama
+('Tere Liye',                'Penulis produktif Indonesia, dikenal lewat novel bergenre drama, fantasi, dan petualangan. Beberapa karyanya: Hujan, Rindu, Bumi, Pulang.'),
+('Dee Lestari',              'Novelis dan musisi Indonesia. Dikenal lewat seri Supernova dan Perahu Kertas.'),
+('Ahmad Fuadi',              'Penulis dan wartawan Indonesia, terkenal lewat novel Negeri 5 Menara.'),
+('Andrea Hirata',            'Penulis asal Belitung, dikenal lewat Laskar Pelangi dan Tetralogi Laskar Pelangi.'),
+('Buya Hamka',               'Ulama, sastrawan, dan tokoh nasional Indonesia. Karyanya mencakup novel dan tafsir Al-Quran.'),
+ 
+-- Romance
+('Pidi Baiq',                'Seniman dan penulis Indonesia, dikenal lewat seri Dilan yang fenomenal.'),
+('Erisca Febriani',          'Penulis muda Indonesia, populer lewat novel Dear Nathan yang berawal dari Wattpad.'),
+('Ilana Tan',                'Penulis Indonesia berdarah Tionghoa, terkenal lewat seri four-seasons (Autumn in Paris, dll).'),
+('Kang Abik',                'Nama pena Habiburrahman El Shirazy, penulis novel Islami bestseller Indonesia.'),
+ 
+-- Fantasy
+('Sitta Karina',             'Penulis Indonesia yang aktif di genre roman dan fantasi remaja.'),
+('Jostein Gaarder',          'Penulis asal Norwegia, dikenal lewat Sophie\'s World dan Dunia Anna.'),
+ 
+-- Sci-Fi
+('Merry Riana',              'Motivator dan penulis Indonesia-Singapura, terkenal lewat Mimpi Sejuta Dollar.'),
+('Intan Paramaditha',        'Penulis Indonesia, akademisi, dan sutradara. Karya-karyanya mengeksplorasi genre fiksi eksperimental.'),
+('Arthur C. Clarke',         'Penulis fiksi ilmiah legendaris asal Inggris, dikenal lewat 2001: A Space Odyssey.'),
+('Orson Scott Card',         'Penulis fiksi ilmiah Amerika, pemenang Nebula dan Hugo Award untuk Ender\'s Game.'),
+('Michael Crichton',         'Penulis dan sutradara Amerika, terkenal lewat Jurassic Park dan Sphere.'),
+('Frank Herbert',            'Penulis fiksi ilmiah Amerika, dikenal lewat epos Dune yang ikonik.'),
+ 
+-- Adventure
+('Budi Darma',               'Sastrawan senior Indonesia, penulis novel Olenka dan berbagai karya sastra penting.'),
+('Achdiat K. Mihardja',      'Sastrawan Indonesia angkatan 45, dikenal lewat novel Atheis.'),
+('Ahmad Tohari',             'Penulis Indonesia, terkenal lewat Trilogi Ronggeng Dukuh Paruk.'),
+('Langit Kresna Hariadi',    'Penulis Indonesia spesialis novel sejarah, dikenal lewat seri Gajah Mada.'),
+('Motinggo Busye',           'Sastrawan Indonesia, penulis novel dan naskah drama termasuk Naga Bonar.'),
+('Danarto',                  'Cerpenis dan dramawan Indonesia angkatan 70-an, dikenal karya-karyanya yang surealis.'),
+ 
+-- Cartoon / Manga
+('Fujiko F. Fujio',          'Nama pena duet manga Jepang pencipta Doraemon, salah satu karya manga paling ikonik di dunia.'),
+('Masashi Kishimoto',        'Mangaka Jepang, pencipta seri Naruto yang mendunia.'),
+('Eiichiro Oda',             'Mangaka Jepang, pencipta One Piece — seri manga terlaris sepanjang masa.'),
+('Akira Toriyama',           'Mangaka Jepang legendaris, pencipta Dragon Ball dan desainer karakter Dragon Quest.'),
+('Gosho Aoyama',             'Mangaka Jepang, pencipta seri Detektif Conan (Case Closed).'),
+('Yoshito Usui',             'Mangaka Jepang, pencipta Crayon Shinchan yang populer di seluruh Asia.'),
+('Tite Kubo',                'Mangaka Jepang, pencipta seri Bleach yang masuk jajaran Big Three manga.'),
+('Hajime Isayama',           'Mangaka Jepang, pencipta Attack on Titan (Shingeki no Kyojin).'),
+('Koyoharu Gotouge',         'Mangaka Jepang, pencipta Demon Slayer (Kimetsu no Yaiba).'),
+('Kohei Horikoshi',          'Mangaka Jepang, pencipta My Hero Academia (Boku no Hero Academia).');
