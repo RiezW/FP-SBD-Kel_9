@@ -54,6 +54,7 @@ Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-export melalui 
 
 Database `library_kel9` terdiri dari **9 tabel** dengan relasi yang terdefinisi melalui foreign key constraints.
 
+<img width="1600" height="925" alt="WhatsApp Image 2026-06-08 at 9 55 36 PM" src="https://github.com/user-attachments/assets/b6db0064-42ea-42e8-a9a6-5d8c82358ace" />
 
 ### Deskripsi Tabel
 
