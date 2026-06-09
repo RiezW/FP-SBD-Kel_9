@@ -54,22 +54,6 @@ Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-export melalui 
 
 Database `library_kel9` terdiri dari **9 tabel** dengan relasi yang terdefinisi melalui foreign key constraints.
 
-### Diagram Relasi
-
-```
-pengarang (1) ─────────────── (N) buku
-                                    │
-                        ┌───────────┤
-                        │           │
-kategori (N) ── buku_kategori ──── (N) buku
-                        │
-              peminjaman (N) ── (1) anggota
-                   │       └── (1) pustakawan
-                   │
-              denda (1) ── (1) peminjaman
-
-anggota (1) ─────────────────────── (N) riwayat_aktivitas
-```
 
 ### Deskripsi Tabel
 
