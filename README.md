@@ -214,15 +214,15 @@ Koleksi buku mencakup karya dari penulis Indonesia ternama (Tere Liye, Dee Lesta
 
 ### Import ke MySQL/phpMyAdmin
 
-**Via phpMyAdmin:**
-1. Buka phpMyAdmin, buat database baru bernama `library_kel9`
-2. Pilih tab **Import**, unggah file `library_kel9.sql`
-3. Klik **Go**
+  **a. Via phpMyAdmin:**
+  1. Buka phpMyAdmin, buat database baru bernama `library_kel9`
+  2. Pilih tab **Import**, unggah file `library_kel9.sql`
+  3. Klik **Go**
 
-**Via command line:**
-```bash
-mysql -u root -p < library_kel9.sql
-```
+  **b. Via command line:**
+  ```bash
+  mysql -u root -p < library_kel9.sql
+  ```
 
 ### Contoh Query
 
