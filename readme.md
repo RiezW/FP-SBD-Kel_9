@@ -30,11 +30,11 @@ Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-export melalui 
 ## Anggota Kelompok
 
 | No | Nama | NRP |
-|----|------|-----|
-| 1  | Muhamad Nasrulhaq | 5027251117 |
-| 2  | Riezco Eka Bayu Witantra | 5027251057 |
-| 3  | Iqbal Rizki Muhammad Fadhli | 5027251027 |
-| 4  | Daffa Ulhaq Fadhlurrahman | 5027251033 |
+|----|-----|-----|
+| 1  | Iqbal Rizki Muhammad Fadhli | 5027251027 |
+| 2  | Daffa Ulhaq Fadhlurrahman | 5027251033 |
+| 3  | Riezco Eka Bayu Witantra | 5027251057 |
+| 4  | Muhamad Nasrulhaq | 5027251117 |
 
 ---
 
@@ -54,22 +54,7 @@ Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-export melalui 
 
 Database `library_kel9` terdiri dari **9 tabel** dengan relasi yang terdefinisi melalui foreign key constraints.
 
-### Diagram Relasi
-
-```
-pengarang (1) ─────────────── (N) buku
-                                    │
-                        ┌───────────┤
-                        │           │
-kategori (N) ── buku_kategori ──── (N) buku
-                        │
-              peminjaman (N) ── (1) anggota
-                   │       └── (1) pustakawan
-                   │
-              denda (1) ── (1) peminjaman
-
-anggota (1) ─────────────────────── (N) riwayat_aktivitas
-```
+<img width="1600" height="925" alt="WhatsApp Image 2026-06-08 at 9 55 36 PM" src="https://github.com/user-attachments/assets/b6db0064-42ea-42e8-a9a6-5d8c82358ace" />
 
 ### Deskripsi Tabel
 
@@ -207,7 +192,7 @@ Database menggunakan **4 trigger** untuk otomatisasi pencatatan aktivitas ke tab
 
 ## Data Dummy
 
-Database disertai data dummy untuk keperluan pengujian:
+Database berikut disertai data dummy untuk keperluan pengujian:
 
 | Tabel | Jumlah Data |
 |-------|-------------|
@@ -229,15 +214,15 @@ Koleksi buku mencakup karya dari penulis Indonesia ternama (Tere Liye, Dee Lesta
 
 ### Import ke MySQL/phpMyAdmin
 
-**Via phpMyAdmin:**
-1. Buka phpMyAdmin, buat database baru bernama `library_kel9`
-2. Pilih tab **Import**, unggah file `library_kel9.sql`
-3. Klik **Go**
+  **a. Via phpMyAdmin:**
+  1. Buka phpMyAdmin, buat database baru bernama `library_kel9`
+  2. Pilih tab **Import**, unggah file `library_kel9.sql`
+  3. Klik **Go**
 
-**Via command line:**
-```bash
-mysql -u root -p < library_kel9.sql
-```
+  **b. Via command line:**
+  ```bash
+  mysql -u root -p < library_kel9.sql
+  ```
 
 ### Contoh Query
 
