@@ -1,4 +1,0 @@
-INSERT INTO anggota (nama, alamat) VALUES
-('Muhamad Nasrulhaq', 'Mataram'),
-('Riezco Eka Bayu Witantra', 'Sidoarjo')
-('Daffa Ulhaq Fadhlurrahman', 'Banda Aceh');
