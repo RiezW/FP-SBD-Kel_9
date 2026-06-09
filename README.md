@@ -192,7 +192,7 @@ Database menggunakan **4 trigger** untuk otomatisasi pencatatan aktivitas ke tab
 
 ## Data Dummy
 
-Database disertai data dummy untuk keperluan pengujian:
+Database berikut disertai data dummy untuk keperluan pengujian:
 
 | Tabel | Jumlah Data |
 |-------|-------------|
