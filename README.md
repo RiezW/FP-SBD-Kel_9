@@ -31,8 +31,10 @@ Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-export melalui 
 
 | No | Nama | NRP |
 |----|------|-----|
-| 1  | Muhamad Nasrulhaq | 5027251117 |
-| 2  | Riezco Eka Bayu Witantra | *(lihat data anggota)* |
+| 1  | Iqbal Rizki Muhammad Fadhli | 5027251027 |
+| 2  | Daffa Ulhaq Fadhlurrahman | 5027251033 |
+| 3  | Riezco Eka Bayu Witantra | 5027251057 |
+| 4  | Muhamad Nasrulhaq | 5027251117 |
 
 ---
 
