@@ -1,6 +1,0 @@
-INSERT INTO Pustakawan(nama, username, password_hash) VALUES
-('Andre Onana', 'a.onana24', SHA2('Admin123', 256)),
-('Bruno Fernandes', 'bruno.assists', SHA2('Admin456', 256)),
-('Casemiro', 'case.casimiro', SHA2('Admin789', 256)),
-('Diogo Dalot', 'dalot.shoots', SHA2('Admin234', 256)),
-('Eric Bailly', 'eric.bailly', SHA2('Admin345', 256));
