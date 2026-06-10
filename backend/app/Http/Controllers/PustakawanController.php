@@ -25,4 +25,17 @@ class PustakawanController extends Controller
             JSON_PRETTY_PRINT
         );
     }
+
+    public function peminjaman($id)
+    {
+        $pustakawan = Pustakawan::with('peminjaman')
+            ->findOrFail($id);
+
+        return response()->json(
+            $pustakawan->peminjaman,
+            200,
+            [],
+            JSON_PRETTY_PRINT
+        );
+    }
 }

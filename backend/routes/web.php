@@ -36,3 +36,13 @@ Route::get('/pustakawan/{id}', [PustakawanController::class, 'show']);
 
 Route::get('/riwayat-aktivitas', [RiwayatAktivitasController::class, 'index']);
 Route::get('/riwayat-aktivitas/{id}', [RiwayatAktivitasController::class, 'show']);
+
+Route::get('/buku/{id}/pengarang', [BukuController::class, 'pengarang']);
+
+Route::get('/buku/{id}/kategori', [BukuController::class, 'kategori']);
+
+Route::get('/anggota/{id}/peminjaman', [AnggotaController::class, 'peminjaman']);
+
+Route::get('/peminjaman/{id}/denda',[PeminjamanController::class, 'denda']);
+
+Route::get('/pustakawan/{id}/peminjaman', [PustakawanController::class, 'peminjaman']);

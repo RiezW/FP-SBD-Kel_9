@@ -19,7 +19,20 @@ class AnggotaController extends Controller
     public function show($id)
     {
         return response()->json(
-            Anggota::findOrFail($id),
+            Anggota::with('peminjaman')->findOrFail($id),
+            200,
+            [],
+            JSON_PRETTY_PRINT
+        );
+    }
+
+    public function peminjaman($id)
+    {
+        $anggota = Anggota::with('peminjaman')
+            ->findOrFail($id);
+
+        return response()->json(
+            $anggota->peminjaman,
             200,
             [],
             JSON_PRETTY_PRINT
