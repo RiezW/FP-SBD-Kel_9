@@ -20,6 +20,7 @@ BUKU
 -----------------------------------------------------------------------*/
 
 Route::get('/buku', [BukuController::class, 'index']);
+Route::get('/buku/search', [BukuController::class, 'search']);
 Route::get('/buku/{id}', [BukuController::class, 'show']);
 
 Route::post('/buku', [BukuController::class, 'store']);

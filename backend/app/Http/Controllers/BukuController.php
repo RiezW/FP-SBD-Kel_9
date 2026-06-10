@@ -104,4 +104,55 @@ class BukuController extends Controller
             'message' => 'Buku berhasil dihapus'
         ]);
     }
+
+    public function search(Request $request)
+    {
+        $query = Buku::with([
+            'pengarang',
+            'kategori'
+        ]);
+
+        if ($request->filled('judul')) {
+            $query->where(
+                'judul',
+                'like',
+                '%' . $request->judul . '%'
+            );
+        }
+
+        if ($request->filled('isbn')) {
+            $query->where(
+                'isbn',
+                'like',
+                '%' . $request->isbn . '%'
+            );
+        }
+
+        if ($request->filled('pengarang')) {
+            $query->whereHas('pengarang', function ($q) use ($request) {
+                $q->where(
+                    'nama',
+                    'like',
+                    '%' . $request->pengarang . '%'
+                );
+            });
+        }
+
+        if ($request->filled('kategori')) {
+            $query->whereHas('kategori', function ($q) use ($request) {
+                $q->where(
+                    'nama_kategori',
+                    'like',
+                    '%' . $request->kategori . '%'
+                );
+            });
+        }
+
+        return response()->json(
+            $query->get(),
+            200,
+            [],
+            JSON_PRETTY_PRINT
+        );
+    }
 }
