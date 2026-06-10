@@ -256,6 +256,8 @@ SkenarioIDKeteranganA — tepat waktu1–6Dikembalikan sebelum/tepat jatuh tempo
 [5] Dummy data denda — 6 baris dari skenario B, tarif Rp 2.000/hari. 3 sudah lunas, 3 masih belum_bayar — bagus untuk demo view dan rekap.
 
 ---
+<img width="1128" height="930" alt="image" src="https://github.com/user-attachments/assets/ad951e41-4d53-4f07-9af3-51548accf127" />
+
 ```sql
 > *Database ini dibuat sebagai bagian dari Final Project mata kuliah Sistem Basis Data, Semester Genap 2025/2026.*
 
