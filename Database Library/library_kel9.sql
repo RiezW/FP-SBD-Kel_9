@@ -1,11 +1,11 @@
 -- phpMyAdmin SQL Dump
--- version 5.2.3
+-- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: localhost:3306
--- Generation Time: Jun 09, 2026 at 02:55 AM
--- Server version: 8.4.3
--- PHP Version: 8.3.30
+-- Host: 127.0.0.1
+-- Generation Time: Jun 10, 2026 at 07:32 PM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -57,6 +57,66 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_kembali_buku` (IN `p_id_peminjam
     END IF;
 END$$
 
+CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_pinjam_buku` (IN `p_id_anggota` INT, IN `p_id_buku` INT, IN `p_id_petugas` INT, IN `p_durasi_hari` INT)   BEGIN
+    DECLARE v_stok         INT DEFAULT 0;
+    DECLARE v_status       VARCHAR(20);
+    DECLARE v_aktif        VARCHAR(20);
+    DECLARE v_tgl_kembali  DATE;
+
+    -- Cek stok buku
+    SELECT `stok` INTO v_stok
+    FROM `buku`
+    WHERE `id_buku` = p_id_buku;
+
+    IF v_stok IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Buku tidak ditemukan!';
+    ELSEIF v_stok = 0 THEN
+        SIGNAL SQLSTATE '45000'
+            SET MESSAGE_TEXT = 'Stok buku habis, tidak bisa dipinjam!';
+    ELSE
+        -- Cek status anggota
+        SELECT `status` INTO v_aktif
+        FROM `anggota`
+        WHERE `id_anggota` = p_id_anggota;
+
+        IF v_aktif IS NULL THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Anggota tidak ditemukan!';
+        ELSEIF v_aktif != 'aktif' THEN
+            SIGNAL SQLSTATE '45000'
+                SET MESSAGE_TEXT = 'Anggota non-aktif tidak dapat meminjam buku!';
+        ELSE
+            -- Cek apakah anggota masih punya denda belum bayar
+            IF EXISTS (
+                SELECT 1
+                FROM `denda` d
+                JOIN `peminjaman` p ON d.`id_peminjaman` = p.`id_peminjaman`
+                WHERE p.`id_anggota` = p_id_anggota
+                  AND d.`status_bayar` = 'belum_bayar'
+            ) THEN
+                SIGNAL SQLSTATE '45000'
+                    SET MESSAGE_TEXT = 'Anggota masih memiliki denda yang belum dibayar!';
+            ELSE
+                SET v_tgl_kembali = DATE_ADD(CURDATE(), INTERVAL p_durasi_hari DAY);
+
+                -- Insert record peminjaman
+                INSERT INTO `peminjaman`
+                    (`id_anggota`, `id_buku`, `id_petugas`, `tgl_pinjam`,
+                     `tgl_kembali_rencana`, `status`)
+                VALUES
+                    (p_id_anggota, p_id_buku, p_id_petugas, CURDATE(),
+                     v_tgl_kembali, 'dipinjam');
+
+                -- Kurangi stok
+                UPDATE `buku`
+                SET `stok` = `stok` - 1
+                WHERE `id_buku` = p_id_buku;
+            END IF;
+        END IF;
+    END IF;
+END$$
+
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_rekap_denda_per_periode` (IN `p_tgl_mulai` DATE, IN `p_tgl_selesai` DATE)   BEGIN
     SELECT 
         COUNT(d.`id_denda`) AS `total_kasus_pelanggaran`,
@@ -76,13 +136,13 @@ DELIMITER ;
 --
 
 CREATE TABLE `anggota` (
-  `id_anggota` int NOT NULL,
-  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `alamat` text COLLATE utf8mb4_unicode_ci,
-  `no_telepon` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `email` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `tanggal_daftar` date NOT NULL DEFAULT (curdate()),
-  `status` enum('aktif','non-aktif') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'aktif'
+  `id_anggota` int(11) NOT NULL,
+  `nama` varchar(100) NOT NULL,
+  `alamat` text DEFAULT NULL,
+  `no_telepon` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `tanggal_daftar` date NOT NULL DEFAULT curdate(),
+  `status` enum('aktif','non-aktif') NOT NULL DEFAULT 'aktif'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -120,13 +180,13 @@ DELIMITER ;
 --
 
 CREATE TABLE `buku` (
-  `id_buku` int NOT NULL,
-  `isbn` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `judul` varchar(200) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `tahun_terbit` year DEFAULT NULL,
-  `penerbit` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `stok` int NOT NULL DEFAULT '0',
-  `id_pengarang` int NOT NULL
+  `id_buku` int(11) NOT NULL,
+  `isbn` varchar(20) DEFAULT NULL,
+  `judul` varchar(200) NOT NULL,
+  `tahun_terbit` year(4) DEFAULT NULL,
+  `penerbit` varchar(100) DEFAULT NULL,
+  `stok` int(11) NOT NULL DEFAULT 0,
+  `id_pengarang` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -220,8 +280,8 @@ DELIMITER ;
 --
 
 CREATE TABLE `buku_kategori` (
-  `id_buku` int NOT NULL,
-  `id_kategori` int NOT NULL
+  `id_buku` int(11) NOT NULL,
+  `id_kategori` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -239,40 +299,35 @@ INSERT INTO `buku_kategori` (`id_buku`, `id_kategori`) VALUES
 (8, 1),
 (9, 1),
 (10, 1),
-(14, 1),
-(19, 1),
-(20, 1),
-(41, 1),
-(42, 1),
-(43, 1),
 (11, 2),
 (12, 2),
 (13, 2),
+(14, 1),
 (14, 2),
 (15, 2),
 (16, 2),
 (17, 2),
 (18, 2),
+(19, 1),
 (19, 2),
+(20, 1),
 (20, 2),
 (21, 3),
+(21, 4),
 (22, 3),
+(22, 4),
 (23, 3),
+(23, 4),
 (24, 3),
+(24, 4),
 (25, 3),
+(25, 4),
 (26, 3),
+(26, 4),
 (27, 3),
 (28, 3),
 (29, 3),
 (30, 3),
-(53, 3),
-(54, 3),
-(21, 4),
-(22, 4),
-(23, 4),
-(24, 4),
-(25, 4),
-(26, 4),
 (31, 4),
 (32, 4),
 (33, 4),
@@ -280,15 +335,17 @@ INSERT INTO `buku_kategori` (`id_buku`, `id_kategori`) VALUES
 (35, 4),
 (36, 4),
 (37, 4),
+(37, 5),
 (38, 4),
+(38, 5),
 (39, 4),
 (40, 4),
-(51, 4),
-(37, 5),
-(38, 5),
 (40, 5),
+(41, 1),
 (41, 5),
+(42, 1),
 (42, 5),
+(43, 1),
 (43, 5),
 (44, 5),
 (45, 5),
@@ -297,18 +354,21 @@ INSERT INTO `buku_kategori` (`id_buku`, `id_kategori`) VALUES
 (48, 5),
 (49, 5),
 (50, 5),
-(58, 5),
-(59, 5),
-(60, 5),
+(51, 4),
 (51, 6),
 (52, 6),
+(53, 3),
 (53, 6),
+(54, 3),
 (54, 6),
 (55, 6),
 (56, 6),
 (57, 6),
+(58, 5),
 (58, 6),
+(59, 5),
 (59, 6),
+(60, 5),
 (60, 6);
 
 -- --------------------------------------------------------
@@ -318,12 +378,24 @@ INSERT INTO `buku_kategori` (`id_buku`, `id_kategori`) VALUES
 --
 
 CREATE TABLE `denda` (
-  `id_denda` int NOT NULL,
-  `id_peminjaman` int NOT NULL,
-  `jumlah_denda` decimal(10,2) NOT NULL DEFAULT '0.00',
+  `id_denda` int(11) NOT NULL,
+  `id_peminjaman` int(11) NOT NULL,
+  `jumlah_denda` decimal(10,2) NOT NULL DEFAULT 0.00,
   `tgl_bayar` date DEFAULT NULL,
-  `status_bayar` enum('belum_bayar','lunas') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'belum_bayar'
+  `status_bayar` enum('belum_bayar','lunas') NOT NULL DEFAULT 'belum_bayar'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `denda`
+--
+
+INSERT INTO `denda` (`id_denda`, `id_peminjaman`, `jumlah_denda`, `tgl_bayar`, `status_bayar`) VALUES
+(1, 7, 8000.00, '2026-05-13', 'lunas'),
+(2, 8, 14000.00, NULL, 'belum_bayar'),
+(3, 9, 6000.00, '2026-05-18', 'lunas'),
+(4, 10, 16000.00, NULL, 'belum_bayar'),
+(5, 11, 8000.00, '2026-05-25', 'lunas'),
+(6, 12, 14000.00, NULL, 'belum_bayar');
 
 -- --------------------------------------------------------
 
@@ -332,9 +404,9 @@ CREATE TABLE `denda` (
 --
 
 CREATE TABLE `kategori` (
-  `id_kategori` int NOT NULL,
-  `nama_kategori` varchar(80) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `deskripsi` text COLLATE utf8mb4_unicode_ci
+  `id_kategori` int(11) NOT NULL,
+  `nama_kategori` varchar(80) NOT NULL,
+  `deskripsi` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -356,15 +428,80 @@ INSERT INTO `kategori` (`id_kategori`, `nama_kategori`, `deskripsi`) VALUES
 --
 
 CREATE TABLE `peminjaman` (
-  `id_peminjaman` int NOT NULL,
-  `id_anggota` int NOT NULL,
-  `id_buku` int NOT NULL,
-  `id_petugas` int NOT NULL,
-  `tgl_pinjam` date NOT NULL DEFAULT (curdate()),
+  `id_peminjaman` int(11) NOT NULL,
+  `id_anggota` int(11) NOT NULL,
+  `id_buku` int(11) NOT NULL,
+  `id_petugas` int(11) NOT NULL,
+  `tgl_pinjam` date NOT NULL DEFAULT curdate(),
   `tgl_kembali_rencana` date NOT NULL,
   `tgl_kembali_aktual` date DEFAULT NULL,
-  `status` enum('dipinjam','dikembalikan','terlambat') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'dipinjam'
+  `status` enum('dipinjam','dikembalikan','terlambat') NOT NULL DEFAULT 'dipinjam'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `peminjaman`
+--
+
+INSERT INTO `peminjaman` (`id_peminjaman`, `id_anggota`, `id_buku`, `id_petugas`, `tgl_pinjam`, `tgl_kembali_rencana`, `tgl_kembali_aktual`, `status`) VALUES
+(1, 1, 1, 1, '2026-05-01', '2026-05-08', '2026-05-07', 'dikembalikan'),
+(2, 2, 5, 2, '2026-05-03', '2026-05-10', '2026-05-09', 'dikembalikan'),
+(3, 3, 11, 3, '2026-05-05', '2026-05-12', '2026-05-12', 'dikembalikan'),
+(4, 4, 41, 4, '2026-05-06', '2026-05-13', '2026-05-13', 'dikembalikan'),
+(5, 1, 21, 5, '2026-05-10', '2026-05-17', '2026-05-16', 'dikembalikan'),
+(6, 2, 52, 1, '2026-05-12', '2026-05-19', '2026-05-18', 'dikembalikan'),
+(7, 3, 2, 2, '2026-05-01', '2026-05-08', '2026-05-12', 'dikembalikan'),
+(8, 4, 6, 3, '2026-05-04', '2026-05-11', '2026-05-18', 'dikembalikan'),
+(9, 1, 14, 4, '2026-05-07', '2026-05-14', '2026-05-17', 'dikembalikan'),
+(10, 2, 37, 5, '2026-05-10', '2026-05-17', '2026-05-25', 'dikembalikan'),
+(11, 3, 54, 1, '2026-05-13', '2026-05-20', '2026-05-24', 'dikembalikan'),
+(12, 4, 40, 2, '2026-05-15', '2026-05-22', '2026-05-29', 'dikembalikan'),
+(13, 1, 4, 3, '2026-06-05', '2026-06-19', NULL, 'dipinjam'),
+(14, 2, 22, 4, '2026-06-06', '2026-06-20', NULL, 'dipinjam'),
+(15, 3, 58, 5, '2026-06-07', '2026-06-21', NULL, 'dipinjam'),
+(16, 4, 15, 1, '2026-06-08', '2026-06-22', NULL, 'dipinjam'),
+(17, 1, 50, 2, '2026-05-20', '2026-05-27', NULL, 'terlambat'),
+(18, 2, 46, 3, '2026-05-22', '2026-05-29', NULL, 'terlambat'),
+(19, 3, 9, 4, '2026-05-25', '2026-06-01', NULL, 'terlambat'),
+(20, 4, 30, 5, '2026-05-28', '2026-06-04', NULL, 'terlambat');
+
+--
+-- Triggers `peminjaman`
+--
+DELIMITER $$
+CREATE TRIGGER `trg_setelah_insert_peminjaman` AFTER INSERT ON `peminjaman` FOR EACH ROW BEGIN
+    INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
+    VALUES (
+        NEW.id_anggota,
+        'pinjam',
+        CONCAT(
+            'Buku ID ', NEW.id_buku,
+            ' dipinjam oleh anggota ID ', NEW.id_anggota,
+            ' (peminjaman ID: ', NEW.id_peminjaman,
+            ', tgl kembali rencana: ', NEW.tgl_kembali_rencana, ')'
+        )
+    );
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `trg_setelah_update_peminjaman` AFTER UPDATE ON `peminjaman` FOR EACH ROW BEGIN
+    -- Hanya log ketika status berubah ke 'dikembalikan'
+    IF NEW.status = 'dikembalikan' AND OLD.status != 'dikembalikan' THEN
+        INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
+        VALUES (
+            NEW.id_anggota,
+            'kembali',
+            CONCAT(
+                'Buku ID ', NEW.id_buku,
+                ' dikembalikan oleh anggota ID ', NEW.id_anggota,
+                ' (peminjaman ID: ', NEW.id_peminjaman,
+                ', tgl kembali aktual: ', NEW.tgl_kembali_aktual, ')'
+            )
+        );
+    END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -373,9 +510,9 @@ CREATE TABLE `peminjaman` (
 --
 
 CREATE TABLE `pengarang` (
-  `id_pengarang` int NOT NULL,
-  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `biografi` text COLLATE utf8mb4_unicode_ci
+  `id_pengarang` int(11) NOT NULL,
+  `nama` varchar(100) NOT NULL,
+  `biografi` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -424,10 +561,10 @@ INSERT INTO `pengarang` (`id_pengarang`, `nama`, `biografi`) VALUES
 --
 
 CREATE TABLE `pustakawan` (
-  `id_petugas` int NOT NULL,
-  `nama` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `username` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `password_hash` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL
+  `id_petugas` int(11) NOT NULL,
+  `nama` varchar(100) NOT NULL,
+  `username` varchar(50) NOT NULL,
+  `password_hash` varchar(255) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -448,12 +585,38 @@ INSERT INTO `pustakawan` (`id_petugas`, `nama`, `username`, `password_hash`) VAL
 --
 
 CREATE TABLE `riwayat_aktivitas` (
-  `id_aktivitas` bigint NOT NULL,
-  `id_anggota` int DEFAULT NULL,
-  `tipe_aksi` enum('login','pinjam','kembali','bayar_denda','daftar','hapus_anggota','tambah_buku','hapus_buku') COLLATE utf8mb4_unicode_ci NOT NULL,
-  `detail` text COLLATE utf8mb4_unicode_ci,
-  `timestamp` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP
+  `id_aktivitas` bigint(20) NOT NULL,
+  `id_anggota` int(11) DEFAULT NULL,
+  `tipe_aksi` enum('login','pinjam','kembali','bayar_denda','daftar','hapus_anggota','tambah_buku','hapus_buku') NOT NULL,
+  `detail` text DEFAULT NULL,
+  `timestamp` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `riwayat_aktivitas`
+--
+
+INSERT INTO `riwayat_aktivitas` (`id_aktivitas`, `id_anggota`, `tipe_aksi`, `detail`, `timestamp`) VALUES
+(1, 1, 'pinjam', 'Buku ID 1 dipinjam oleh anggota ID 1 (peminjaman ID: 1, tgl kembali rencana: 2026-05-08)', '2026-06-11 00:27:02'),
+(2, 2, 'pinjam', 'Buku ID 5 dipinjam oleh anggota ID 2 (peminjaman ID: 2, tgl kembali rencana: 2026-05-10)', '2026-06-11 00:27:02'),
+(3, 3, 'pinjam', 'Buku ID 11 dipinjam oleh anggota ID 3 (peminjaman ID: 3, tgl kembali rencana: 2026-05-12)', '2026-06-11 00:27:02'),
+(4, 4, 'pinjam', 'Buku ID 41 dipinjam oleh anggota ID 4 (peminjaman ID: 4, tgl kembali rencana: 2026-05-13)', '2026-06-11 00:27:02'),
+(5, 1, 'pinjam', 'Buku ID 21 dipinjam oleh anggota ID 1 (peminjaman ID: 5, tgl kembali rencana: 2026-05-17)', '2026-06-11 00:27:02'),
+(6, 2, 'pinjam', 'Buku ID 52 dipinjam oleh anggota ID 2 (peminjaman ID: 6, tgl kembali rencana: 2026-05-19)', '2026-06-11 00:27:02'),
+(7, 3, 'pinjam', 'Buku ID 2 dipinjam oleh anggota ID 3 (peminjaman ID: 7, tgl kembali rencana: 2026-05-08)', '2026-06-11 00:27:02'),
+(8, 4, 'pinjam', 'Buku ID 6 dipinjam oleh anggota ID 4 (peminjaman ID: 8, tgl kembali rencana: 2026-05-11)', '2026-06-11 00:27:02'),
+(9, 1, 'pinjam', 'Buku ID 14 dipinjam oleh anggota ID 1 (peminjaman ID: 9, tgl kembali rencana: 2026-05-14)', '2026-06-11 00:27:02'),
+(10, 2, 'pinjam', 'Buku ID 37 dipinjam oleh anggota ID 2 (peminjaman ID: 10, tgl kembali rencana: 2026-05-17)', '2026-06-11 00:27:02'),
+(11, 3, 'pinjam', 'Buku ID 54 dipinjam oleh anggota ID 3 (peminjaman ID: 11, tgl kembali rencana: 2026-05-20)', '2026-06-11 00:27:02'),
+(12, 4, 'pinjam', 'Buku ID 40 dipinjam oleh anggota ID 4 (peminjaman ID: 12, tgl kembali rencana: 2026-05-22)', '2026-06-11 00:27:02'),
+(13, 1, 'pinjam', 'Buku ID 4 dipinjam oleh anggota ID 1 (peminjaman ID: 13, tgl kembali rencana: 2026-06-19)', '2026-06-11 00:27:02'),
+(14, 2, 'pinjam', 'Buku ID 22 dipinjam oleh anggota ID 2 (peminjaman ID: 14, tgl kembali rencana: 2026-06-20)', '2026-06-11 00:27:02'),
+(15, 3, 'pinjam', 'Buku ID 58 dipinjam oleh anggota ID 3 (peminjaman ID: 15, tgl kembali rencana: 2026-06-21)', '2026-06-11 00:27:02'),
+(16, 4, 'pinjam', 'Buku ID 15 dipinjam oleh anggota ID 4 (peminjaman ID: 16, tgl kembali rencana: 2026-06-22)', '2026-06-11 00:27:02'),
+(17, 1, 'pinjam', 'Buku ID 50 dipinjam oleh anggota ID 1 (peminjaman ID: 17, tgl kembali rencana: 2026-05-27)', '2026-06-11 00:27:02'),
+(18, 2, 'pinjam', 'Buku ID 46 dipinjam oleh anggota ID 2 (peminjaman ID: 18, tgl kembali rencana: 2026-05-29)', '2026-06-11 00:27:02'),
+(19, 3, 'pinjam', 'Buku ID 9 dipinjam oleh anggota ID 3 (peminjaman ID: 19, tgl kembali rencana: 2026-06-01)', '2026-06-11 00:27:02'),
+(20, 4, 'pinjam', 'Buku ID 30 dipinjam oleh anggota ID 4 (peminjaman ID: 20, tgl kembali rencana: 2026-06-04)', '2026-06-11 00:27:02');
 
 -- --------------------------------------------------------
 
@@ -462,10 +625,10 @@ CREATE TABLE `riwayat_aktivitas` (
 -- (See below for the actual view)
 --
 CREATE TABLE `vw_anggota_paling_aktif` (
-`id_anggota` int
+`id_anggota` int(11)
 ,`nama` varchar(100)
 ,`email` varchar(100)
-,`total_pinjam_buku` bigint
+,`total_pinjam_buku` bigint(21)
 );
 
 -- --------------------------------------------------------
@@ -475,12 +638,30 @@ CREATE TABLE `vw_anggota_paling_aktif` (
 -- (See below for the actual view)
 --
 CREATE TABLE `vw_buku_paling_dipinjam` (
-`id_buku` int
+`id_buku` int(11)
 ,`isbn` varchar(20)
 ,`judul` varchar(200)
 ,`penerbit` varchar(100)
-,`total_peminjaman` bigint
+,`total_peminjaman` bigint(21)
 );
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `vw_anggota_paling_aktif`
+--
+DROP TABLE IF EXISTS `vw_anggota_paling_aktif`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_anggota_paling_aktif`  AS SELECT `a`.`id_anggota` AS `id_anggota`, `a`.`nama` AS `nama`, `a`.`email` AS `email`, count(`p`.`id_peminjaman`) AS `total_pinjam_buku` FROM (`peminjaman` `p` join `anggota` `a` on(`p`.`id_anggota` = `a`.`id_anggota`)) GROUP BY `a`.`id_anggota`, `a`.`nama`, `a`.`email` ORDER BY count(`p`.`id_peminjaman`) DESC LIMIT 0, 10 ;
+
+-- --------------------------------------------------------
+
+--
+-- Structure for view `vw_buku_paling_dipinjam`
+--
+DROP TABLE IF EXISTS `vw_buku_paling_dipinjam`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_buku_paling_dipinjam`  AS SELECT `b`.`id_buku` AS `id_buku`, `b`.`isbn` AS `isbn`, `b`.`judul` AS `judul`, `b`.`penerbit` AS `penerbit`, count(`p`.`id_peminjaman`) AS `total_peminjaman` FROM (`peminjaman` `p` join `buku` `b` on(`p`.`id_buku` = `b`.`id_buku`)) GROUP BY `b`.`id_buku`, `b`.`isbn`, `b`.`judul`, `b`.`penerbit` ORDER BY count(`p`.`id_peminjaman`) DESC LIMIT 0, 10 ;
 
 --
 -- Indexes for dumped tables
@@ -558,67 +739,49 @@ ALTER TABLE `riwayat_aktivitas`
 -- AUTO_INCREMENT for table `anggota`
 --
 ALTER TABLE `anggota`
-  MODIFY `id_anggota` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+  MODIFY `id_anggota` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `buku`
 --
 ALTER TABLE `buku`
-  MODIFY `id_buku` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+  MODIFY `id_buku` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
 
 --
 -- AUTO_INCREMENT for table `denda`
 --
 ALTER TABLE `denda`
-  MODIFY `id_denda` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id_denda` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `kategori`
 --
 ALTER TABLE `kategori`
-  MODIFY `id_kategori` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_kategori` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- AUTO_INCREMENT for table `peminjaman`
 --
 ALTER TABLE `peminjaman`
-  MODIFY `id_peminjaman` int NOT NULL AUTO_INCREMENT;
+  MODIFY `id_peminjaman` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- AUTO_INCREMENT for table `pengarang`
 --
 ALTER TABLE `pengarang`
-  MODIFY `id_pengarang` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+  MODIFY `id_pengarang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
 
 --
 -- AUTO_INCREMENT for table `pustakawan`
 --
 ALTER TABLE `pustakawan`
-  MODIFY `id_petugas` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+  MODIFY `id_petugas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `riwayat_aktivitas`
 --
 ALTER TABLE `riwayat_aktivitas`
-  MODIFY `id_aktivitas` bigint NOT NULL AUTO_INCREMENT;
-
--- --------------------------------------------------------
-
---
--- Structure for view `vw_anggota_paling_aktif`
---
-DROP TABLE IF EXISTS `vw_anggota_paling_aktif`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_anggota_paling_aktif`  AS SELECT `a`.`id_anggota` AS `id_anggota`, `a`.`nama` AS `nama`, `a`.`email` AS `email`, count(`p`.`id_peminjaman`) AS `total_pinjam_buku` FROM (`peminjaman` `p` join `anggota` `a` on((`p`.`id_anggota` = `a`.`id_anggota`))) GROUP BY `a`.`id_anggota`, `a`.`nama`, `a`.`email` ORDER BY `total_pinjam_buku` DESC LIMIT 0, 10 ;
-
--- --------------------------------------------------------
-
---
--- Structure for view `vw_buku_paling_dipinjam`
---
-DROP TABLE IF EXISTS `vw_buku_paling_dipinjam`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_buku_paling_dipinjam`  AS SELECT `b`.`id_buku` AS `id_buku`, `b`.`isbn` AS `isbn`, `b`.`judul` AS `judul`, `b`.`penerbit` AS `penerbit`, count(`p`.`id_peminjaman`) AS `total_peminjaman` FROM (`peminjaman` `p` join `buku` `b` on((`p`.`id_buku` = `b`.`id_buku`))) GROUP BY `b`.`id_buku`, `b`.`isbn`, `b`.`judul`, `b`.`penerbit` ORDER BY `total_peminjaman` DESC LIMIT 0, 10 ;
+  MODIFY `id_aktivitas` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Constraints for dumped tables
