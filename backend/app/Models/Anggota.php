@@ -11,6 +11,15 @@ class Anggota extends Model
     protected $primaryKey = 'id_anggota';
     public $timestamps = false;
 
+    protected $fillable = [
+        'nama',
+        'alamat',
+        'no_telepon',
+        'email',
+        'tanggal_daftar',
+        'status'
+    ];
+
     public function peminjaman()
     {
         return $this->hasMany(

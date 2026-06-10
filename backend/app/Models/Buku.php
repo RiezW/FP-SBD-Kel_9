@@ -12,6 +12,15 @@ class Buku extends Model
     protected $primaryKey = 'id_buku';
     public $timestamps = false;
 
+    protected $fillable = [
+        'isbn',
+        'judul',
+        'tahun_terbit',
+        'penerbit',
+        'stok',
+        'id_pengarang'
+    ];
+
     public function pengarang()
     {
         return $this->belongsTo(

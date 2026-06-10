@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Buku;
+use Illuminate\Http\Request;
 
 class BukuController extends Controller
 {
@@ -51,5 +52,56 @@ class BukuController extends Controller
             [],
             JSON_PRETTY_PRINT
         );
+    }
+
+    public function store(Request $request)
+    {
+        $buku = Buku::create([
+            'isbn' => $request->isbn,
+            'judul' => $request->judul,
+            'tahun_terbit' => $request->tahun_terbit,
+            'penerbit' => $request->penerbit,
+            'stok' => $request->stok,
+            'id_pengarang' => $request->id_pengarang
+        ]);
+
+        return response()->json(
+            $buku,
+            201,
+            [],
+            JSON_PRETTY_PRINT
+        );
+    }
+
+    public function update(Request $request, $id)
+    {
+        $buku = Buku::findOrFail($id);
+
+        $buku->update([
+            'isbn' => $request->isbn,
+            'judul' => $request->judul,
+            'tahun_terbit' => $request->tahun_terbit,
+            'penerbit' => $request->penerbit,
+            'stok' => $request->stok,
+            'id_pengarang' => $request->id_pengarang
+        ]);
+
+        return response()->json(
+            $buku,
+            200,
+            [],
+            JSON_PRETTY_PRINT
+        );
+    }
+
+    public function destroy($id)
+    {
+        $buku = Buku::findOrFail($id);
+
+        $buku->delete();
+
+        return response()->json([
+            'message' => 'Buku berhasil dihapus'
+        ]);
     }
 }
