@@ -251,7 +251,7 @@ SkenarioIDKeteranganA — tepat waktu1–6Dikembalikan sebelum/tepat jatuh tempo
 [5] Dummy data denda — 6 baris dari skenario B, tarif Rp 2.000/hari. 3 sudah lunas, 3 masih belum_bayar — bagus untuk demo view dan rekap.
 
 ---
-
+```sql
 > *Database ini dibuat sebagai bagian dari Final Project mata kuliah Sistem Basis Data, Semester Genap 2025/2026.*
 
 -- ================================================================
@@ -479,3 +479,4 @@ SET SQL_SAFE_UPDATES = @OLD_SQL_SAFE_UPDATES;
 
 ALTER TABLE `peminjaman` MODIFY `id_peminjaman` INT NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 ALTER TABLE `denda`      MODIFY `id_denda`      INT NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+```
