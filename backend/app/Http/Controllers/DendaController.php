@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Buku;
+use App\Models\Denda;
 
-class BukuController extends Controller
+class DendaController extends Controller
 {
     public function index()
     {
         return response()->json(
-            Buku::all(),
+            Denda::all(),
             200,
             [],
             JSON_PRETTY_PRINT
         );
     }
+
     public function show($id)
     {
         return response()->json(
-            Buku::findOrFail($id),
+            Denda::findOrFail($id),
             200,
             [],
             JSON_PRETTY_PRINT

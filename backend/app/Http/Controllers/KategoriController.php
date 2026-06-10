@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Buku;
+use App\Models\Kategori;
 
-class BukuController extends Controller
+class KategoriController extends Controller
 {
     public function index()
     {
         return response()->json(
-            Buku::all(),
+            Kategori::all(),
             200,
             [],
             JSON_PRETTY_PRINT
         );
     }
+
     public function show($id)
     {
         return response()->json(
-            Buku::findOrFail($id),
+            Kategori::findOrFail($id),
             200,
             [],
             JSON_PRETTY_PRINT

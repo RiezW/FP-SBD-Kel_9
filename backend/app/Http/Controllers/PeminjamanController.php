@@ -2,23 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Buku;
+use App\Models\Peminjaman;
 
-class BukuController extends Controller
+class PeminjamanController extends Controller
 {
     public function index()
     {
         return response()->json(
-            Buku::all(),
+            Peminjaman::all(),
             200,
             [],
             JSON_PRETTY_PRINT
         );
     }
+
     public function show($id)
     {
         return response()->json(
-            Buku::findOrFail($id),
+            Peminjaman::findOrFail($id),
             200,
             [],
             JSON_PRETTY_PRINT
