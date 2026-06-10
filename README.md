@@ -243,11 +243,16 @@ SELECT * FROM riwayat_aktivitas ORDER BY timestamp DESC LIMIT 10;
 ```
 
 Yang baru di file tambahan_library_kel9.sql:
+
 [1] sp_pinjam_buku — 4 parameter: id_anggota, id_buku, id_petugas, durasi_hari. Validasi bertingkat: stok tersedia → anggota aktif → tidak ada denda belum bayar → baru INSERT + kurangi stok.
+
 [2] trg_setelah_insert_peminjaman — auto-log ke riwayat_aktivitas dengan tipe_aksi = 'pinjam' setiap ada peminjaman baru.
+
 [3] trg_setelah_update_peminjaman — auto-log tipe_aksi = 'kembali' ketika status berubah jadi 'dikembalikan' (cek OLD.status != NEW.status supaya tidak double log).
+
 [4] Dummy data peminjaman — 20 baris, 4 skenario:
 SkenarioIDKeteranganA — tepat waktu1–6Dikembalikan sebelum/tepat jatuh tempoB — terlambat7–12Dikembalikan terlambat, ada dendaC — aktif normal13–16Masih dipinjam, belum jatuh tempoD — terlambat aktif17–20Masih dipinjam, sudah lewat jatuh tempo
+
 [5] Dummy data denda — 6 baris dari skenario B, tarif Rp 2.000/hari. 3 sudah lunas, 3 masih belum_bayar — bagus untuk demo view dan rekap.
 
 ---
