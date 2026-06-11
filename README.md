@@ -23,7 +23,7 @@
 
 `library_kel9` adalah database sistem manajemen perpustakaan yang dirancang untuk mengelola seluruh operasional perpustakaan secara digital. Sistem ini mencakup manajemen koleksi buku, data pengarang, kategori, keanggotaan, transaksi peminjaman, denda keterlambatan, serta audit trail seluruh aktivitas penting.
 
-Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-export melalui **phpMyAdmin 5.2.1**.
+Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-_export_ melalui **phpMyAdmin 5.2.1**.
 
 ---
 
@@ -52,7 +52,7 @@ Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-export melalui 
 
 ## Struktur Database
 
-Database `library_kel9` terdiri dari **9 tabel** dengan relasi yang terdefinisi melalui foreign key constraints.
+Database `library_kel9` terdiri dari **9 tabel** dengan relasi yang terdefinisi melalui _foreign key constraints_.
 
 <img width="1600" height="925" alt="WhatsApp Image 2026-06-08 at 9 55 36 PM" src="https://github.com/user-attachments/assets/b6db0064-42ea-42e8-a9a6-5d8c82358ace" />
 
@@ -216,8 +216,8 @@ Koleksi buku mencakup karya dari penulis Indonesia ternama (Tere Liye, Dee Lesta
 
   **a. Via phpMyAdmin:**
   1. Buka phpMyAdmin, buat database baru bernama `library_kel9`
-  2. Pilih tab **Import**, unggah file `library_kel9.sql`
-  3. Klik **Go**
+  2. Pilih tab _**Import**_, unggah file `library_kel9.sql`
+  3. Klik _**Go**_
 
   **b. Via command line:**
   ```bash
