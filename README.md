@@ -75,7 +75,7 @@ Menyimpan data koleksi buku perpustakaan.
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
 | `id_buku` | `INT` | _Primary Key_, _Auto Increment_ |
-| `isbn` | `VARCHAR(20)` | Unique — kode ISBN buku |
+| `isbn` | `VARCHAR(20)` | _Unique_ — kode ISBN buku |
 | `judul` | `VARCHAR(200)` | Judul buku |
 | `tahun_terbit` | `YEAR(4)` | Tahun terbit |
 | `penerbit` | `VARCHAR(100)` | Nama penerbit |
