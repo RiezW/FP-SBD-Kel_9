@@ -63,7 +63,7 @@ Menyimpan data penulis/pengarang buku.
 
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
-| `id_pengarang` | `INT` | Primary Key, Auto Increment |
+| `id_pengarang` | `INT` | _Primary Key_, _Auto Increment_ |
 | `nama` | `VARCHAR(100)` | Nama pengarang |
 | `biografi` | `TEXT` | Biografi singkat pengarang |
 
@@ -74,7 +74,7 @@ Menyimpan data koleksi buku perpustakaan.
 
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
-| `id_buku` | `INT` | Primary Key, Auto Increment |
+| `id_buku` | `INT` | _Primary Key_, _Auto Increment_ |
 | `isbn` | `VARCHAR(20)` | Unique — kode ISBN buku |
 | `judul` | `VARCHAR(200)` | Judul buku |
 | `tahun_terbit` | `YEAR(4)` | Tahun terbit |
@@ -89,7 +89,7 @@ Menyimpan kategori/genre buku.
 
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
-| `id_kategori` | `INT` | Primary Key, Auto Increment |
+| `id_kategori` | `INT` | _Primary Key_, _Auto Increment_ |
 | `nama_kategori` | `VARCHAR(80)` | Nama kategori |
 | `deskripsi` | `TEXT` | Deskripsi kategori |
 
@@ -112,12 +112,12 @@ Menyimpan data anggota/member perpustakaan.
 
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
-| `id_anggota` | `INT` | Primary Key, Auto Increment |
+| `id_anggota` | `INT` | _Primary Key_, _Auto Increment_ |
 | `nama` | `VARCHAR(100)` | Nama lengkap anggota |
 | `alamat` | `TEXT` | Alamat tempat tinggal |
 | `no_telepon` | `VARCHAR(20)` | Nomor telepon |
-| `email` | `VARCHAR(100)` | Unique — alamat email |
-| `tanggal_daftar` | `DATE` | Default `curdate()` |
+| `email` | `VARCHAR(100)` | _Unique_ — alamat email |
+| `tanggal_daftar` | `DATE` | _Default_ `curdate()` |
 
 ---
 
@@ -126,10 +126,10 @@ Menyimpan data petugas/staf perpustakaan yang berwenang memproses transaksi.
 
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
-| `id_petugas` | `INT` | Primary Key, Auto Increment |
+| `id_petugas` | `INT` | _Primary Key_, _Auto Increment_ |
 | `nama` | `VARCHAR(100)` | Nama petugas |
-| `username` | `VARCHAR(50)` | Unique — username login |
-| `password_hash` | `VARCHAR(255)` | Password dalam bentuk hash |
+| `username` | `VARCHAR(50)` | _Unique_ — username login |
+| `password_hash` | `VARCHAR(255)` | _Password_ dalam bentuk hash |
 
 ---
 
@@ -138,7 +138,7 @@ Menyimpan transaksi peminjaman buku oleh anggota.
 
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
-| `id_peminjaman` | `INT` | Primary Key, Auto Increment |
+| `id_peminjaman` | `INT` | _Primary Key_, _Auto Increment_ |
 | `id_anggota` | `INT` | FK → `anggota.id_anggota` |
 | `id_buku` | `INT` | FK → `buku.id_buku` |
 | `id_petugas` | `INT` | FK → `pustakawan.id_petugas` |
@@ -154,8 +154,8 @@ Menyimpan data denda akibat keterlambatan pengembalian buku.
 
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
-| `id_denda` | `INT` | Primary Key, Auto Increment |
-| `id_peminjaman` | `INT` | Unique + FK → `peminjaman.id_peminjaman` (ON DELETE CASCADE) |
+| `id_denda` | `INT` | _Primary Key_, _Auto Increment_ |
+| `id_peminjaman` | `INT` | _Unique_ + FK → `peminjaman.id_peminjaman` (ON DELETE CASCADE) |
 | `jumlah_denda` | `DECIMAL(10,2)` | Nominal denda, default `0.00` |
 | `tgl_bayar` | `DATE` | Tanggal pelunasan denda (nullable) |
 | `status_bayar` | `ENUM` | `'belum_bayar'` / `'lunas'`, default `'belum_bayar'` |
@@ -167,11 +167,11 @@ Tabel audit trail yang merekam seluruh aktivitas penting dalam sistem secara oto
 
 | Kolom | Tipe | Keterangan |
 |-------|------|------------|
-| `id_aktivitas` | `BIGINT` | Primary Key, Auto Increment |
+| `id_aktivitas` | `BIGINT` | _Primary Key_, _Auto Increment_ |
 | `id_anggota` | `INT` | FK → `anggota.id_anggota` (ON DELETE SET NULL), nullable |
 | `tipe_aksi` | `ENUM` | Jenis aktivitas (lihat nilai di bawah) |
 | `detail` | `TEXT` | Keterangan detail aktivitas |
-| `timestamp` | `DATETIME` | Default `current_timestamp()` |
+| `timestamp` | `DATETIME` | _Default_ `current_timestamp()` |
 
 Nilai `tipe_aksi` yang didukung: `login`, `pinjam`, `kembali`, `bayar_denda`, `daftar`, `hapus_anggota`, `tambah_buku`, `hapus_buku`.
 
