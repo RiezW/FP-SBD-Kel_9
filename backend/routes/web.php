@@ -71,6 +71,8 @@ Route::get('/peminjaman/{id}', [PeminjamanController::class, 'show']);
 
 Route::get('/peminjaman/{id}/denda', [PeminjamanController::class, 'denda']);
 
+Route::post('/peminjaman', [PeminjamanController::class, 'store']);
+
 /*-----------------------------------------------------------------------
 Denda
 -----------------------------------------------------------------------*/

@@ -7,15 +7,27 @@
 
 ## Daftar Isi
 
-- [Deskripsi Proyek](#deskripsi-proyek)
-- [Anggota Kelompok](#anggota-kelompok)
-- [Teknologi](#teknologi)
-- [Struktur Database](#struktur-database)
-  - [Diagram Relasi](#diagram-relasi)
-  - [Deskripsi Tabel](#deskripsi-tabel)
-- [Triggers](#triggers)
-- [Data Dummy](#data-dummy)
-- [Cara Menggunakan](#cara-menggunakan)
+- [📚 Library Management System — `library_kel9`](#-library-management-system--library_kel9)
+  - [Daftar Isi](#daftar-isi)
+  - [Deskripsi Proyek](#deskripsi-proyek)
+  - [Anggota Kelompok](#anggota-kelompok)
+  - [Teknologi](#teknologi)
+  - [Struktur Database](#struktur-database)
+    - [Deskripsi Tabel](#deskripsi-tabel)
+      - [1. `pengarang`](#1-pengarang)
+      - [2. `buku`](#2-buku)
+      - [3. `kategori`](#3-kategori)
+      - [4. `buku_kategori`](#4-buku_kategori)
+      - [5. `anggota`](#5-anggota)
+      - [6. `pustakawan`](#6-pustakawan)
+      - [7. `peminjaman`](#7-peminjaman)
+      - [8. `denda`](#8-denda)
+      - [9. `riwayat_aktivitas`](#9-riwayat_aktivitas)
+  - [Triggers](#triggers)
+  - [Data Dummy](#data-dummy)
+  - [Cara Menggunakan](#cara-menggunakan)
+    - [Import ke MySQL/phpMyAdmin](#import-ke-mysqlphpmyadmin)
+    - [Contoh Query](#contoh-query)
 
 ---
 

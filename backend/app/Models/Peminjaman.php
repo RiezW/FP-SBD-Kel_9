@@ -14,6 +14,16 @@ class Peminjaman extends Model
     protected $primaryKey = 'id_peminjaman';
     public $timestamps = false;
 
+    protected $fillable = [
+        'id_anggota',
+        'id_buku',
+        'id_petugas',
+        'tgl_pinjam',
+        'tgl_kembali_rencana',
+        'tgl_kembali_aktual',
+        'status'
+    ];
+
     public function anggota()
     {
         return $this->belongsTo(
