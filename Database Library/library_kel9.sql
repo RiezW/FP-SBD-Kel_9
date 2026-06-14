@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 14, 2026 at 07:21 AM
+-- Generation Time: Jun 14, 2026 at 07:35 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -27,6 +27,7 @@ DELIMITER $$
 --
 -- Procedures
 --
+DROP PROCEDURE IF EXISTS `sp_kembali_buku`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_kembali_buku` (IN `p_id_peminjaman` INT)   BEGIN
     DECLARE v_id_buku INT;
     DECLARE v_tgl_rencana DATE;
@@ -59,6 +60,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_kembali_buku` (IN `p_id_peminjam
     END IF;
 END$$
 
+DROP PROCEDURE IF EXISTS `sp_pinjam_buku`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_pinjam_buku` (IN `p_id_anggota` INT, IN `p_id_buku` INT, IN `p_id_petugas` INT, IN `p_durasi_hari` INT)   BEGIN
     DECLARE v_stok         INT DEFAULT 0;
     DECLARE v_status       VARCHAR(20);
@@ -119,6 +121,7 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_pinjam_buku` (IN `p_id_anggota` 
     END IF;
 END$$
 
+DROP PROCEDURE IF EXISTS `sp_rekap_denda_per_periode`$$
 CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_rekap_denda_per_periode` (IN `p_tgl_mulai` DATE, IN `p_tgl_selesai` DATE)   BEGIN
     SELECT 
         COUNT(d.`id_denda`) AS `total_kasus_pelanggaran`,
@@ -137,6 +140,7 @@ DELIMITER ;
 -- Table structure for table `anggota`
 --
 
+DROP TABLE IF EXISTS `anggota`;
 CREATE TABLE IF NOT EXISTS `anggota` (
   `id_anggota` int(11) NOT NULL AUTO_INCREMENT,
   `nama` varchar(100) NOT NULL,
@@ -162,6 +166,7 @@ INSERT INTO `anggota` (`id_anggota`, `nama`, `alamat`, `no_telepon`, `email`, `t
 --
 -- Triggers `anggota`
 --
+DROP TRIGGER IF EXISTS `trg_sebelum_delete_anggota`;
 DELIMITER $$
 CREATE TRIGGER `trg_sebelum_delete_anggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
@@ -169,6 +174,7 @@ CREATE TRIGGER `trg_sebelum_delete_anggota` BEFORE DELETE ON `anggota` FOR EACH 
 END
 $$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_setelah_insert_anggota`;
 DELIMITER $$
 CREATE TRIGGER `trg_setelah_insert_anggota` AFTER INSERT ON `anggota` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
@@ -183,6 +189,7 @@ DELIMITER ;
 -- Table structure for table `buku`
 --
 
+DROP TABLE IF EXISTS `buku`;
 CREATE TABLE IF NOT EXISTS `buku` (
   `id_buku` int(11) NOT NULL AUTO_INCREMENT,
   `isbn` varchar(20) DEFAULT NULL,
@@ -265,6 +272,7 @@ INSERT INTO `buku` (`id_buku`, `isbn`, `judul`, `tahun_terbit`, `penerbit`, `sto
 --
 -- Triggers `buku`
 --
+DROP TRIGGER IF EXISTS `trg_sebelum_delete_buku`;
 DELIMITER $$
 CREATE TRIGGER `trg_sebelum_delete_buku` BEFORE DELETE ON `buku` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
@@ -272,6 +280,7 @@ CREATE TRIGGER `trg_sebelum_delete_buku` BEFORE DELETE ON `buku` FOR EACH ROW BE
 END
 $$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_setelah_insert_buku`;
 DELIMITER $$
 CREATE TRIGGER `trg_setelah_insert_buku` AFTER INSERT ON `buku` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
@@ -286,6 +295,7 @@ DELIMITER ;
 -- Table structure for table `buku_kategori`
 --
 
+DROP TABLE IF EXISTS `buku_kategori`;
 CREATE TABLE IF NOT EXISTS `buku_kategori` (
   `id_buku` int(11) NOT NULL,
   `id_kategori` int(11) NOT NULL,
@@ -386,6 +396,7 @@ INSERT INTO `buku_kategori` (`id_buku`, `id_kategori`) VALUES
 -- Table structure for table `denda`
 --
 
+DROP TABLE IF EXISTS `denda`;
 CREATE TABLE IF NOT EXISTS `denda` (
   `id_denda` int(11) NOT NULL AUTO_INCREMENT,
   `id_peminjaman` int(11) NOT NULL,
@@ -414,6 +425,7 @@ INSERT INTO `denda` (`id_denda`, `id_peminjaman`, `jumlah_denda`, `tgl_bayar`, `
 -- Table structure for table `kategori`
 --
 
+DROP TABLE IF EXISTS `kategori`;
 CREATE TABLE IF NOT EXISTS `kategori` (
   `id_kategori` int(11) NOT NULL AUTO_INCREMENT,
   `nama_kategori` varchar(80) NOT NULL,
@@ -439,6 +451,7 @@ INSERT INTO `kategori` (`id_kategori`, `nama_kategori`, `deskripsi`) VALUES
 -- Table structure for table `peminjaman`
 --
 
+DROP TABLE IF EXISTS `peminjaman`;
 CREATE TABLE IF NOT EXISTS `peminjaman` (
   `id_peminjaman` int(11) NOT NULL AUTO_INCREMENT,
   `id_anggota` int(11) NOT NULL,
@@ -483,6 +496,7 @@ INSERT INTO `peminjaman` (`id_peminjaman`, `id_anggota`, `id_buku`, `id_petugas`
 --
 -- Triggers `peminjaman`
 --
+DROP TRIGGER IF EXISTS `trg_setelah_insert_peminjaman`;
 DELIMITER $$
 CREATE TRIGGER `trg_setelah_insert_peminjaman` AFTER INSERT ON `peminjaman` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
@@ -499,6 +513,7 @@ CREATE TRIGGER `trg_setelah_insert_peminjaman` AFTER INSERT ON `peminjaman` FOR 
 END
 $$
 DELIMITER ;
+DROP TRIGGER IF EXISTS `trg_setelah_update_peminjaman`;
 DELIMITER $$
 CREATE TRIGGER `trg_setelah_update_peminjaman` AFTER UPDATE ON `peminjaman` FOR EACH ROW BEGIN
     -- Hanya log ketika status berubah ke 'dikembalikan'
@@ -525,6 +540,7 @@ DELIMITER ;
 -- Table structure for table `pengarang`
 --
 
+DROP TABLE IF EXISTS `pengarang`;
 CREATE TABLE IF NOT EXISTS `pengarang` (
   `id_pengarang` int(11) NOT NULL AUTO_INCREMENT,
   `nama` varchar(100) NOT NULL,
@@ -577,6 +593,7 @@ INSERT INTO `pengarang` (`id_pengarang`, `nama`, `biografi`) VALUES
 -- Table structure for table `pustakawan`
 --
 
+DROP TABLE IF EXISTS `pustakawan`;
 CREATE TABLE IF NOT EXISTS `pustakawan` (
   `id_petugas` int(11) NOT NULL AUTO_INCREMENT,
   `nama` varchar(100) NOT NULL,
@@ -603,6 +620,7 @@ INSERT INTO `pustakawan` (`id_petugas`, `nama`, `username`, `password_hash`) VAL
 -- Table structure for table `riwayat_aktivitas`
 --
 
+DROP TABLE IF EXISTS `riwayat_aktivitas`;
 CREATE TABLE IF NOT EXISTS `riwayat_aktivitas` (
   `id_aktivitas` bigint(20) NOT NULL AUTO_INCREMENT,
   `id_anggota` int(11) DEFAULT NULL,
@@ -645,6 +663,7 @@ INSERT INTO `riwayat_aktivitas` (`id_aktivitas`, `id_anggota`, `tipe_aksi`, `det
 -- Stand-in structure for view `vw_anggota_paling_aktif`
 -- (See below for the actual view)
 --
+DROP VIEW IF EXISTS `vw_anggota_paling_aktif`;
 CREATE TABLE IF NOT EXISTS `vw_anggota_paling_aktif` (
 `id_anggota` int(11)
 ,`nama` varchar(100)
@@ -658,6 +677,7 @@ CREATE TABLE IF NOT EXISTS `vw_anggota_paling_aktif` (
 -- Stand-in structure for view `vw_buku_paling_dipinjam`
 -- (See below for the actual view)
 --
+DROP VIEW IF EXISTS `vw_buku_paling_dipinjam`;
 CREATE TABLE IF NOT EXISTS `vw_buku_paling_dipinjam` (
 `id_buku` int(11)
 ,`isbn` varchar(20)
@@ -673,6 +693,7 @@ CREATE TABLE IF NOT EXISTS `vw_buku_paling_dipinjam` (
 --
 DROP TABLE IF EXISTS `vw_anggota_paling_aktif`;
 
+DROP VIEW IF EXISTS `vw_anggota_paling_aktif`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_anggota_paling_aktif`  AS SELECT `a`.`id_anggota` AS `id_anggota`, `a`.`nama` AS `nama`, `a`.`email` AS `email`, count(`p`.`id_peminjaman`) AS `total_pinjam_buku` FROM (`peminjaman` `p` join `anggota` `a` on(`p`.`id_anggota` = `a`.`id_anggota`)) GROUP BY `a`.`id_anggota`, `a`.`nama`, `a`.`email` ORDER BY count(`p`.`id_peminjaman`) DESC LIMIT 0, 10 ;
 
 -- --------------------------------------------------------
@@ -682,6 +703,7 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 --
 DROP TABLE IF EXISTS `vw_buku_paling_dipinjam`;
 
+DROP VIEW IF EXISTS `vw_buku_paling_dipinjam`;
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_buku_paling_dipinjam`  AS SELECT `b`.`id_buku` AS `id_buku`, `b`.`isbn` AS `isbn`, `b`.`judul` AS `judul`, `b`.`penerbit` AS `penerbit`, count(`p`.`id_peminjaman`) AS `total_peminjaman` FROM (`peminjaman` `p` join `buku` `b` on(`p`.`id_buku` = `b`.`id_buku`)) GROUP BY `b`.`id_buku`, `b`.`isbn`, `b`.`judul`, `b`.`penerbit` ORDER BY count(`p`.`id_peminjaman`) DESC LIMIT 0, 10 ;
 
 --
