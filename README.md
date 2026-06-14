@@ -23,8 +23,6 @@
       - [7. `peminjaman`](#7-peminjaman)
       - [8. `denda`](#8-denda)
       - [9. `riwayat_aktivitas`](#9-riwayat_aktivitas)
-  - [Triggers](#triggers)
-  - [Data Dummy](#data-dummy)
   - [Cara Menggunakan](#cara-menggunakan)
     - [Import ke MySQL/phpMyAdmin](#import-ke-mysqlphpmyadmin)
     - [Contoh Query](#contoh-query)
