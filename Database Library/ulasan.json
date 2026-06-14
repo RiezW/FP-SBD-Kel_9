@@ -1,0 +1,246 @@
+[{
+  "_id": {
+    "$oid": "6a276fdb5c5c31c098805a69"
+  },
+  "id_anggota": "001",
+  "nama_anggota": "Ciko",
+  "id_buku": "a",
+  "judul_buku": "a.a",
+  "rating": 5,
+  "teks_ulasan": "Buku yang sangat menginspirasi dan penuh makna kehidupan.",
+  "tgl_ulasan": {
+    "$date": "2026-06-08T00:00:00.000Z"
+  },
+  "tag": [
+    "fiksi",
+    "inspiratif",
+    "pendidikan"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893fee4"
+  },
+  "id_anggota": "1",
+  "nama_anggota": "Muhamad Nasrulhaq",
+  "id_buku": "1",
+  "judul_buku": "Hujan",
+  "rating": 5,
+  "teks_ulasan": "Cerita yang sangat menyentuh hati, membuat saya merenung tentang arti kehilangan dan harapan.",
+  "tgl_ulasan": {
+    "$date": "2026-05-07T00:00:00.000Z"
+  },
+  "tag": [
+    "mengharukan",
+    "inspiratif",
+    "fiksi-ilmiah"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893fee5"
+  },
+  "id_anggota": "2",
+  "nama_anggota": "Riezco Eka Bayu Witantra",
+  "id_buku": "5",
+  "judul_buku": "Sang Pemimpi",
+  "rating": 5,
+  "teks_ulasan": "Kisah persahabatan dan semangat meraih mimpi yang benar-benar memotivasi saya untuk tidak menyerah.",
+  "tgl_ulasan": {
+    "$date": "2026-05-09T00:00:00.000Z"
+  },
+  "tag": [
+    "motivasi",
+    "persahabatan",
+    "inspiratif"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893fee6"
+  },
+  "id_anggota": "3",
+  "nama_anggota": "Daffa Ulhaq Fadhlurrahman",
+  "id_buku": "11",
+  "judul_buku": "Dilan 1990",
+  "rating": 4,
+  "teks_ulasan": "Romantis dan lucu, dialog Dilan selalu bikin senyum sendiri.",
+  "tgl_ulasan": {
+    "$date": "2026-05-12T00:00:00.000Z"
+  },
+  "tag": [
+    "romance",
+    "remaja",
+    "lucu"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893fee7"
+  },
+  "id_anggota": "4",
+  "nama_anggota": "Iqbal Rizki Muhammad Fadhli",
+  "id_buku": "41",
+  "judul_buku": "Laskar Pelangi",
+  "rating": 5,
+  "teks_ulasan": "-",
+  "tgl_ulasan": {
+    "$date": "2026-05-13T00:00:00.000Z"
+  },
+  "tag": [
+    "inspiratif",
+    "pendidikan",
+    "persahabatan"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893fee8"
+  },
+  "id_anggota": "1",
+  "nama_anggota": "Muhamad Nasrulhaq",
+  "id_buku": "21",
+  "judul_buku": "Bumi",
+  "rating": 4,
+  "teks_ulasan": "Dunia fantasy yang dibangun Tere Liye sangat imajinatif, karakter Raib dan teman-temannya menarik.",
+  "tgl_ulasan": {
+    "$date": "2026-05-16T00:00:00.000Z"
+  },
+  "tag": [
+    "fantasy",
+    "petualangan",
+    "remaja"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893fee9"
+  },
+  "id_anggota": "2",
+  "nama_anggota": "Riezco Eka Bayu Witantra",
+  "id_buku": "52",
+  "judul_buku": "Naruto Vol.1",
+  "rating": 5,
+  "teks_ulasan": "-",
+  "tgl_ulasan": {
+    "$date": "2026-05-18T00:00:00.000Z"
+  },
+  "tag": [
+    "manga",
+    "aksi",
+    "petualangan"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893feea"
+  },
+  "id_anggota": "3",
+  "nama_anggota": "Daffa Ulhaq Fadhlurrahman",
+  "id_buku": "2",
+  "judul_buku": "Perahu Kertas",
+  "rating": 4,
+  "teks_ulasan": "Kisah cinta yang sederhana namun mengena, Dee Lestari berhasil menggambarkan perasaan dengan indah.",
+  "tgl_ulasan": {
+    "$date": "2026-05-12T00:00:00.000Z"
+  },
+  "tag": [
+    "romance",
+    "drama",
+    "kehidupan"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893feeb"
+  },
+  "id_anggota": "4",
+  "nama_anggota": "Iqbal Rizki Muhammad Fadhli",
+  "id_buku": "6",
+  "judul_buku": "Tenggelamnya Kapal Van Der Wijck",
+  "rating": 5,
+  "teks_ulasan": "-",
+  "tgl_ulasan": {
+    "$date": "2026-05-18T00:00:00.000Z"
+  },
+  "tag": [
+    "klasik",
+    "drama",
+    "romance"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893feec"
+  },
+  "id_anggota": "1",
+  "nama_anggota": "Muhamad Nasrulhaq",
+  "id_buku": "14",
+  "judul_buku": "Dear Nathan",
+  "rating": 3,
+  "teks_ulasan": "-",
+  "tgl_ulasan": {
+    "$date": "2026-05-17T00:00:00.000Z"
+  },
+  "tag": [
+    "romance",
+    "remaja"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893feed"
+  },
+  "id_anggota": "2",
+  "nama_anggota": "Riezco Eka Bayu Witantra",
+  "id_buku": "37",
+  "judul_buku": "2001: A Space Odyssey",
+  "rating": 4,
+  "teks_ulasan": "Konsep fiksi ilmiahnya jauh melampaui zamannya, membuat pembaca berpikir tentang eksistensi manusia di alam semesta.",
+  "tgl_ulasan": {
+    "$date": "2026-05-25T00:00:00.000Z"
+  },
+  "tag": [
+    "fiksi-ilmiah",
+    "filosofi",
+    "luar-angkasa"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893feee"
+  },
+  "id_anggota": "3",
+  "nama_anggota": "Daffa Ulhaq Fadhlurrahman",
+  "id_buku": "54",
+  "judul_buku": "Dragon Ball Vol.1",
+  "rating": 5,
+  "teks_ulasan": "Klasik yang tidak lekang oleh waktu! Petualangan Son Goku dari awal benar-benar seru dan menghibur.",
+  "tgl_ulasan": {
+    "$date": "2026-05-24T00:00:00.000Z"
+  },
+  "tag": [
+    "manga",
+    "aksi",
+    "klasik"
+  ]
+},
+{
+  "_id": {
+    "$oid": "6a2e3e2ca35d4d326893feef"
+  },
+  "id_anggota": "4",
+  "nama_anggota": "Iqbal Rizki Muhammad Fadhli",
+  "id_buku": "40",
+  "judul_buku": "Dune",
+  "rating": 4,
+  "teks_ulasan": "Epik dan kompleks, dunia Arrakis terasa nyata. Butuh kesabaran membacanya tapi sangat memuaskan.",
+  "tgl_ulasan": {
+    "$date": "2026-05-29T00:00:00.000Z"
+  },
+  "tag": [
+    "fiksi-ilmiah",
+    "petualangan",
+    "epik"
+  ]
+}]
