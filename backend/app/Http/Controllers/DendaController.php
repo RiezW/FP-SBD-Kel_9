@@ -19,7 +19,25 @@ class DendaController extends Controller
     public function show($id)
     {
         return response()->json(
-            Denda::findOrFail($id),
+            Denda::with('peminjaman')
+                ->findOrFail($id),
+            200,
+            [],
+            JSON_PRETTY_PRINT
+        );
+    }
+
+    public function bayar($id)
+    {
+        $denda = Denda::findOrFail($id);
+
+        $denda->update([
+            'status_bayar' => 'lunas',
+            'tgl_bayar' => now()
+        ]);
+
+        return response()->json(
+            $denda,
             200,
             [],
             JSON_PRETTY_PRINT

@@ -73,12 +73,15 @@ Route::get('/peminjaman/{id}/denda', [PeminjamanController::class, 'denda']);
 
 Route::post('/peminjaman', [PeminjamanController::class, 'store']);
 
+Route::put('/peminjaman/{id}/kembali', [PeminjamanController::class, 'kembali']);
+
 /*-----------------------------------------------------------------------
 Denda
 -----------------------------------------------------------------------*/
 
 Route::get('/denda', [DendaController::class, 'index']);
 Route::get('/denda/{id}', [DendaController::class, 'show']);
+Route::put('/denda/{id}/bayar', [DendaController::class, 'bayar']);
 
 /*-----------------------------------------------------------------------
 Pustakawan

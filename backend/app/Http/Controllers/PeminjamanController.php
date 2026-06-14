@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Peminjaman;
-use Illuminate\Http\Request;
 use App\Models\Buku;
+use App\Models\Denda;
+use Illuminate\Http\Request;
 use Carbon\Carbon;
 
 class PeminjamanController extends Controller
@@ -77,6 +78,60 @@ class PeminjamanController extends Controller
         return response()->json(
             $peminjaman,
             201,
+            [],
+            JSON_PRETTY_PRINT
+        );
+    }
+
+    public function kembali($id)
+    {
+        $peminjaman = Peminjaman::with('buku')
+            ->findOrFail($id);
+
+        if ($peminjaman->status != 'dipinjam') {
+            return response()->json([
+                'message' => 'Buku sudah dikembalikan'
+            ], 400);
+        }
+
+        $tanggalKembali = Carbon::today();
+
+        $peminjaman->update([
+            'tgl_kembali_aktual' => $tanggalKembali
+        ]);
+
+        $peminjaman->buku->increment('stok');
+
+        $hariTerlambat = Carbon::parse(
+            $peminjaman->tgl_kembali_rencana
+        )->diffInDays(
+            $tanggalKembali,
+            false
+        );
+
+        if ($hariTerlambat > 0) {
+
+            $jumlahDenda = $hariTerlambat * 1000;
+
+            Denda::create([
+                'id_peminjaman' => $peminjaman->id_peminjaman,
+                'jumlah_denda' => $jumlahDenda,
+                'status_bayar' => 'belum_bayar'
+            ]);
+
+            $peminjaman->update([
+                'status' => 'terlambat'
+            ]);
+        } else {
+
+            $peminjaman->update([
+                'status' => 'dikembalikan'
+            ]);
+        }
+
+        return response()->json(
+            $peminjaman->fresh(),
+            200,
             [],
             JSON_PRETTY_PRINT
         );

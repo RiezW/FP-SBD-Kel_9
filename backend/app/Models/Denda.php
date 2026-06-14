@@ -11,6 +11,13 @@ class Denda extends Model
     protected $primaryKey = 'id_denda';
     public $timestamps = false;
 
+    protected $fillable = [
+        'id_peminjaman',
+        'jumlah_denda',
+        'tgl_bayar',
+        'status_bayar'
+    ];
+
     public function peminjaman()
     {
         return $this->belongsTo(
