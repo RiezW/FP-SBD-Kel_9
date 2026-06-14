@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 10, 2026 at 07:32 PM
+-- Generation Time: Jun 14, 2026 at 07:21 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,8 @@ SET time_zone = "+00:00";
 --
 -- Database: `library_kel9`
 --
+CREATE DATABASE IF NOT EXISTS `library_kel9` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
+USE `library_kel9`;
 
 DELIMITER $$
 --
@@ -135,15 +137,17 @@ DELIMITER ;
 -- Table structure for table `anggota`
 --
 
-CREATE TABLE `anggota` (
-  `id_anggota` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `anggota` (
+  `id_anggota` int(11) NOT NULL AUTO_INCREMENT,
   `nama` varchar(100) NOT NULL,
   `alamat` text DEFAULT NULL,
   `no_telepon` varchar(20) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `tanggal_daftar` date NOT NULL DEFAULT curdate(),
-  `status` enum('aktif','non-aktif') NOT NULL DEFAULT 'aktif'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `status` enum('aktif','non-aktif') NOT NULL DEFAULT 'aktif',
+  PRIMARY KEY (`id_anggota`),
+  UNIQUE KEY `email` (`email`)
+) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `anggota`
@@ -179,15 +183,18 @@ DELIMITER ;
 -- Table structure for table `buku`
 --
 
-CREATE TABLE `buku` (
-  `id_buku` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `buku` (
+  `id_buku` int(11) NOT NULL AUTO_INCREMENT,
   `isbn` varchar(20) DEFAULT NULL,
   `judul` varchar(200) NOT NULL,
   `tahun_terbit` year(4) DEFAULT NULL,
   `penerbit` varchar(100) DEFAULT NULL,
   `stok` int(11) NOT NULL DEFAULT 0,
-  `id_pengarang` int(11) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `id_pengarang` int(11) NOT NULL,
+  PRIMARY KEY (`id_buku`),
+  UNIQUE KEY `isbn` (`isbn`),
+  KEY `fk_buku_pengarang` (`id_pengarang`)
+) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `buku`
@@ -279,9 +286,11 @@ DELIMITER ;
 -- Table structure for table `buku_kategori`
 --
 
-CREATE TABLE `buku_kategori` (
+CREATE TABLE IF NOT EXISTS `buku_kategori` (
   `id_buku` int(11) NOT NULL,
-  `id_kategori` int(11) NOT NULL
+  `id_kategori` int(11) NOT NULL,
+  PRIMARY KEY (`id_buku`,`id_kategori`),
+  KEY `fk_bk_kategori` (`id_kategori`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -377,13 +386,15 @@ INSERT INTO `buku_kategori` (`id_buku`, `id_kategori`) VALUES
 -- Table structure for table `denda`
 --
 
-CREATE TABLE `denda` (
-  `id_denda` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `denda` (
+  `id_denda` int(11) NOT NULL AUTO_INCREMENT,
   `id_peminjaman` int(11) NOT NULL,
   `jumlah_denda` decimal(10,2) NOT NULL DEFAULT 0.00,
   `tgl_bayar` date DEFAULT NULL,
-  `status_bayar` enum('belum_bayar','lunas') NOT NULL DEFAULT 'belum_bayar'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `status_bayar` enum('belum_bayar','lunas') NOT NULL DEFAULT 'belum_bayar',
+  PRIMARY KEY (`id_denda`),
+  UNIQUE KEY `id_peminjaman` (`id_peminjaman`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `denda`
@@ -403,11 +414,12 @@ INSERT INTO `denda` (`id_denda`, `id_peminjaman`, `jumlah_denda`, `tgl_bayar`, `
 -- Table structure for table `kategori`
 --
 
-CREATE TABLE `kategori` (
-  `id_kategori` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `kategori` (
+  `id_kategori` int(11) NOT NULL AUTO_INCREMENT,
   `nama_kategori` varchar(80) NOT NULL,
-  `deskripsi` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `deskripsi` text DEFAULT NULL,
+  PRIMARY KEY (`id_kategori`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `kategori`
@@ -427,16 +439,20 @@ INSERT INTO `kategori` (`id_kategori`, `nama_kategori`, `deskripsi`) VALUES
 -- Table structure for table `peminjaman`
 --
 
-CREATE TABLE `peminjaman` (
-  `id_peminjaman` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `peminjaman` (
+  `id_peminjaman` int(11) NOT NULL AUTO_INCREMENT,
   `id_anggota` int(11) NOT NULL,
   `id_buku` int(11) NOT NULL,
   `id_petugas` int(11) NOT NULL,
   `tgl_pinjam` date NOT NULL DEFAULT curdate(),
   `tgl_kembali_rencana` date NOT NULL,
   `tgl_kembali_aktual` date DEFAULT NULL,
-  `status` enum('dipinjam','dikembalikan','terlambat') NOT NULL DEFAULT 'dipinjam'
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `status` enum('dipinjam','dikembalikan','terlambat') NOT NULL DEFAULT 'dipinjam',
+  PRIMARY KEY (`id_peminjaman`),
+  KEY `fk_pmj_anggota` (`id_anggota`),
+  KEY `fk_pmj_buku` (`id_buku`),
+  KEY `fk_pmj_petugas` (`id_petugas`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `peminjaman`
@@ -509,11 +525,12 @@ DELIMITER ;
 -- Table structure for table `pengarang`
 --
 
-CREATE TABLE `pengarang` (
-  `id_pengarang` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `pengarang` (
+  `id_pengarang` int(11) NOT NULL AUTO_INCREMENT,
   `nama` varchar(100) NOT NULL,
-  `biografi` text DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `biografi` text DEFAULT NULL,
+  PRIMARY KEY (`id_pengarang`)
+) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `pengarang`
@@ -560,12 +577,14 @@ INSERT INTO `pengarang` (`id_pengarang`, `nama`, `biografi`) VALUES
 -- Table structure for table `pustakawan`
 --
 
-CREATE TABLE `pustakawan` (
-  `id_petugas` int(11) NOT NULL,
+CREATE TABLE IF NOT EXISTS `pustakawan` (
+  `id_petugas` int(11) NOT NULL AUTO_INCREMENT,
   `nama` varchar(100) NOT NULL,
   `username` varchar(50) NOT NULL,
-  `password_hash` varchar(255) NOT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `password_hash` varchar(255) NOT NULL,
+  PRIMARY KEY (`id_petugas`),
+  UNIQUE KEY `username` (`username`)
+) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `pustakawan`
@@ -584,13 +603,15 @@ INSERT INTO `pustakawan` (`id_petugas`, `nama`, `username`, `password_hash`) VAL
 -- Table structure for table `riwayat_aktivitas`
 --
 
-CREATE TABLE `riwayat_aktivitas` (
-  `id_aktivitas` bigint(20) NOT NULL,
+CREATE TABLE IF NOT EXISTS `riwayat_aktivitas` (
+  `id_aktivitas` bigint(20) NOT NULL AUTO_INCREMENT,
   `id_anggota` int(11) DEFAULT NULL,
   `tipe_aksi` enum('login','pinjam','kembali','bayar_denda','daftar','hapus_anggota','tambah_buku','hapus_buku') NOT NULL,
   `detail` text DEFAULT NULL,
-  `timestamp` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `timestamp` datetime NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id_aktivitas`),
+  KEY `fk_ra_anggota` (`id_anggota`)
+) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `riwayat_aktivitas`
@@ -624,7 +645,7 @@ INSERT INTO `riwayat_aktivitas` (`id_aktivitas`, `id_anggota`, `tipe_aksi`, `det
 -- Stand-in structure for view `vw_anggota_paling_aktif`
 -- (See below for the actual view)
 --
-CREATE TABLE `vw_anggota_paling_aktif` (
+CREATE TABLE IF NOT EXISTS `vw_anggota_paling_aktif` (
 `id_anggota` int(11)
 ,`nama` varchar(100)
 ,`email` varchar(100)
@@ -637,7 +658,7 @@ CREATE TABLE `vw_anggota_paling_aktif` (
 -- Stand-in structure for view `vw_buku_paling_dipinjam`
 -- (See below for the actual view)
 --
-CREATE TABLE `vw_buku_paling_dipinjam` (
+CREATE TABLE IF NOT EXISTS `vw_buku_paling_dipinjam` (
 `id_buku` int(11)
 ,`isbn` varchar(20)
 ,`judul` varchar(200)
@@ -662,126 +683,6 @@ CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW 
 DROP TABLE IF EXISTS `vw_buku_paling_dipinjam`;
 
 CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_buku_paling_dipinjam`  AS SELECT `b`.`id_buku` AS `id_buku`, `b`.`isbn` AS `isbn`, `b`.`judul` AS `judul`, `b`.`penerbit` AS `penerbit`, count(`p`.`id_peminjaman`) AS `total_peminjaman` FROM (`peminjaman` `p` join `buku` `b` on(`p`.`id_buku` = `b`.`id_buku`)) GROUP BY `b`.`id_buku`, `b`.`isbn`, `b`.`judul`, `b`.`penerbit` ORDER BY count(`p`.`id_peminjaman`) DESC LIMIT 0, 10 ;
-
---
--- Indexes for dumped tables
---
-
---
--- Indexes for table `anggota`
---
-ALTER TABLE `anggota`
-  ADD PRIMARY KEY (`id_anggota`),
-  ADD UNIQUE KEY `email` (`email`);
-
---
--- Indexes for table `buku`
---
-ALTER TABLE `buku`
-  ADD PRIMARY KEY (`id_buku`),
-  ADD UNIQUE KEY `isbn` (`isbn`),
-  ADD KEY `fk_buku_pengarang` (`id_pengarang`);
-
---
--- Indexes for table `buku_kategori`
---
-ALTER TABLE `buku_kategori`
-  ADD PRIMARY KEY (`id_buku`,`id_kategori`),
-  ADD KEY `fk_bk_kategori` (`id_kategori`);
-
---
--- Indexes for table `denda`
---
-ALTER TABLE `denda`
-  ADD PRIMARY KEY (`id_denda`),
-  ADD UNIQUE KEY `id_peminjaman` (`id_peminjaman`);
-
---
--- Indexes for table `kategori`
---
-ALTER TABLE `kategori`
-  ADD PRIMARY KEY (`id_kategori`);
-
---
--- Indexes for table `peminjaman`
---
-ALTER TABLE `peminjaman`
-  ADD PRIMARY KEY (`id_peminjaman`),
-  ADD KEY `fk_pmj_anggota` (`id_anggota`),
-  ADD KEY `fk_pmj_buku` (`id_buku`),
-  ADD KEY `fk_pmj_petugas` (`id_petugas`);
-
---
--- Indexes for table `pengarang`
---
-ALTER TABLE `pengarang`
-  ADD PRIMARY KEY (`id_pengarang`);
-
---
--- Indexes for table `pustakawan`
---
-ALTER TABLE `pustakawan`
-  ADD PRIMARY KEY (`id_petugas`),
-  ADD UNIQUE KEY `username` (`username`);
-
---
--- Indexes for table `riwayat_aktivitas`
---
-ALTER TABLE `riwayat_aktivitas`
-  ADD PRIMARY KEY (`id_aktivitas`),
-  ADD KEY `fk_ra_anggota` (`id_anggota`);
-
---
--- AUTO_INCREMENT for dumped tables
---
-
---
--- AUTO_INCREMENT for table `anggota`
---
-ALTER TABLE `anggota`
-  MODIFY `id_anggota` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
-
---
--- AUTO_INCREMENT for table `buku`
---
-ALTER TABLE `buku`
-  MODIFY `id_buku` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
-
---
--- AUTO_INCREMENT for table `denda`
---
-ALTER TABLE `denda`
-  MODIFY `id_denda` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `kategori`
---
-ALTER TABLE `kategori`
-  MODIFY `id_kategori` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `peminjaman`
---
-ALTER TABLE `peminjaman`
-  MODIFY `id_peminjaman` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
-
---
--- AUTO_INCREMENT for table `pengarang`
---
-ALTER TABLE `pengarang`
-  MODIFY `id_pengarang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
-
---
--- AUTO_INCREMENT for table `pustakawan`
---
-ALTER TABLE `pustakawan`
-  MODIFY `id_petugas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
-
---
--- AUTO_INCREMENT for table `riwayat_aktivitas`
---
-ALTER TABLE `riwayat_aktivitas`
-  MODIFY `id_aktivitas` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Constraints for dumped tables
