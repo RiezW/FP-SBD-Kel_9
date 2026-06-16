@@ -26,6 +26,33 @@
   - [Cara Menggunakan](#cara-menggunakan)
     - [Import ke MySQL/phpMyAdmin](#import-ke-mysqlphpmyadmin)
     - [Contoh Query](#contoh-query)
+- [Dokumentasi Penggunaan API Perpustakaan](#dokumentasi-penggunaan-api-perpustakaan)
+- [1. GET (Mengambil Data)](#1-get-mengambil-data)
+- [2. POST (Menambah Data)](#2-post-menambah-data)
+  - [Tambah Buku](#tambah-buku)
+  - [Tambah Anggota](#tambah-anggota)
+  - [Tambah Peminjaman](#tambah-peminjaman)
+  - [Tambah Ulasan (MongoDB)](#tambah-ulasan-mongodb)
+- [3. PUT (Mengubah Data)](#3-put-mengubah-data)
+  - [Update Buku](#update-buku)
+  - [Update Anggota](#update-anggota)
+  - [Aktifkan Anggota](#aktifkan-anggota)
+  - [Nonaktifkan Anggota](#nonaktifkan-anggota)
+  - [Kembalikan Buku](#kembalikan-buku)
+  - [Bayar Denda](#bayar-denda)
+  - [Update Ulasan](#update-ulasan)
+- [4. DELETE (Menghapus Data)](#4-delete-menghapus-data)
+  - [Hapus Buku](#hapus-buku)
+  - [Hapus Ulasan](#hapus-ulasan)
+- [5. Fitur Pencarian](#5-fitur-pencarian)
+  - [Cari Buku](#cari-buku)
+  - [Cari Anggota](#cari-anggota)
+- [6. Ringkasan Endpoint](#6-ringkasan-endpoint)
+  - [Buku](#buku)
+  - [Anggota](#anggota)
+  - [Peminjaman](#peminjaman)
+  - [Denda](#denda)
+  - [Ulasan (MongoDB)](#ulasan-mongodb)
 
 ---
 
@@ -869,4 +896,415 @@ SET SQL_SAFE_UPDATES = @OLD_SQL_SAFE_UPDATES;
 
 ALTER TABLE `peminjaman` MODIFY `id_peminjaman` INT NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 ALTER TABLE `denda`      MODIFY `id_denda`      INT NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+```
+
+
+
+# Dokumentasi Penggunaan API Perpustakaan
+
+Base URL:
+
+```text
+http://127.0.0.1:8000
+```
+
+---
+
+# 1. GET (Mengambil Data)
+
+Semua endpoint GET digunakan dengan cara yang sama, cukup akses URL endpoint melalui browser atau API Client.
+
+Contoh:
+
+```http
+GET /buku
+```
+
+URL:
+
+```text
+http://127.0.0.1:8000/buku
+```
+
+Response:
+
+```json
+[
+    {
+        "id_buku": 1,
+        "judul": "Hujan",
+        "stok": 15
+    }
+]
+```
+
+Contoh endpoint GET lainnya:
+
+```http
+GET /anggota
+GET /anggota/{id}
+GET /buku/{id}
+GET /kategori
+GET /pengarang
+GET /peminjaman
+GET /denda
+GET /ulasan
+```
+
+---
+
+# 2. POST (Menambah Data)
+
+POST digunakan untuk membuat data baru.
+
+## Tambah Buku
+
+Endpoint:
+
+```http
+POST /buku
+```
+
+Body JSON:
+
+```json
+{
+    "isbn": "9999999999999",
+    "judul": "Buku Testing",
+    "tahun_terbit": 2025,
+    "penerbit": "Testing Publisher",
+    "stok": 10,
+    "id_pengarang": 1
+}
+```
+
+---
+
+## Tambah Anggota
+
+Endpoint:
+
+```http
+POST /anggota
+```
+
+Body JSON:
+
+```json
+{
+    "nama": "Anggota Testing",
+    "alamat": "Jl. Testing",
+    "no_telepon": "081234567890",
+    "email": "testing@example.com",
+    "tanggal_daftar": "2025-06-14",
+    "status": "aktif"
+}
+```
+
+---
+
+## Tambah Peminjaman
+
+Endpoint:
+
+```http
+POST /peminjaman
+```
+
+Body JSON:
+
+```json
+{
+    "id_anggota": 1,
+    "id_buku": 1,
+    "id_petugas": 1
+}
+```
+
+---
+
+## Tambah Ulasan (MongoDB)
+
+Endpoint:
+
+```http
+POST /ulasan
+```
+
+Body JSON:
+
+```json
+{
+    "id_anggota": 1,
+    "nama_anggota": "Budi",
+    "id_buku": 1,
+    "judul_buku": "Hujan",
+    "rating": 5,
+    "teks_ulasan": "Buku sangat bagus",
+    "tag": [
+        "romantis",
+        "best-seller"
+    ]
+}
+```
+
+---
+
+# 3. PUT (Mengubah Data)
+
+PUT digunakan untuk memperbarui data yang sudah ada.
+
+## Update Buku
+
+Endpoint:
+
+```http
+PUT /buku/1
+```
+
+Body JSON:
+
+```json
+{
+    "isbn": "9999999999999",
+    "judul": "Buku Testing Revisi",
+    "tahun_terbit": 2025,
+    "penerbit": "Testing Publisher",
+    "stok": 20,
+    "id_pengarang": 1
+}
+```
+
+---
+
+## Update Anggota
+
+Endpoint:
+
+```http
+PUT /anggota/1
+```
+
+Body JSON:
+
+```json
+{
+    "nama": "Budi Update",
+    "alamat": "Jl. Baru",
+    "no_telepon": "081111111111",
+    "email": "budi@gmail.com",
+    "tanggal_daftar": "2025-06-14",
+    "status": "aktif"
+}
+```
+
+---
+
+## Aktifkan Anggota
+
+Endpoint:
+
+```http
+PUT /anggota/1/aktif
+```
+
+Body:
+
+```json
+{}
+```
+
+---
+
+## Nonaktifkan Anggota
+
+Endpoint:
+
+```http
+PUT /anggota/1/nonaktif
+```
+
+Body:
+
+```json
+{}
+```
+
+---
+
+## Kembalikan Buku
+
+Endpoint:
+
+```http
+PUT /peminjaman/1/kembali
+```
+
+Body:
+
+```json
+{}
+```
+
+---
+
+## Bayar Denda
+
+Endpoint:
+
+```http
+PUT /denda/1/bayar
+```
+
+Body:
+
+```json
+{}
+```
+
+---
+
+## Update Ulasan
+
+Endpoint:
+
+```http
+PUT /ulasan/{id}
+```
+
+Body JSON:
+
+```json
+{
+    "rating": 4,
+    "teks_ulasan": "Setelah dibaca ulang, buku ini cukup bagus"
+}
+```
+
+---
+
+# 4. DELETE (Menghapus Data)
+
+DELETE digunakan untuk menghapus data.
+
+## Hapus Buku
+
+Endpoint:
+
+```http
+DELETE /buku/1
+```
+
+Body:
+
+```json
+{}
+```
+
+---
+
+## Hapus Ulasan
+
+Endpoint:
+
+```http
+DELETE /ulasan/{id}
+```
+
+Body:
+
+```json
+{}
+```
+
+---
+
+# 5. Fitur Pencarian
+
+## Cari Buku
+
+Endpoint:
+
+```http
+GET /buku/search?keyword=hujan
+```
+
+Contoh:
+
+```text
+http://127.0.0.1:8000/buku/search?keyword=hujan
+```
+
+---
+
+## Cari Anggota
+
+Endpoint:
+
+```http
+GET /anggota/search?keyword=budi
+```
+
+Contoh:
+
+```text
+http://127.0.0.1:8000/anggota/search?keyword=budi
+```
+
+---
+
+# 6. Ringkasan Endpoint
+
+## Buku
+
+```http
+GET    /buku
+GET    /buku/{id}
+POST   /buku
+PUT    /buku/{id}
+DELETE /buku/{id}
+GET    /buku/search
+GET    /buku/{id}/pengarang
+GET    /buku/{id}/kategori
+```
+
+## Anggota
+
+```http
+GET    /anggota
+GET    /anggota/{id}
+POST   /anggota
+PUT    /anggota/{id}
+PUT    /anggota/{id}/aktif
+PUT    /anggota/{id}/nonaktif
+GET    /anggota/search
+GET    /anggota/{id}/peminjaman
+```
+
+## Peminjaman
+
+```http
+GET    /peminjaman
+GET    /peminjaman/{id}
+POST   /peminjaman
+PUT    /peminjaman/{id}/kembali
+GET    /peminjaman/{id}/denda
+```
+
+## Denda
+
+```http
+GET    /denda
+GET    /denda/{id}
+PUT    /denda/{id}/bayar
+```
+
+## Ulasan (MongoDB)
+
+```http
+GET    /ulasan
+GET    /ulasan/{id}
+POST   /ulasan
+PUT    /ulasan/{id}
+DELETE /ulasan/{id}
 ```
