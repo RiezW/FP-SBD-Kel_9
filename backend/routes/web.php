@@ -10,6 +10,7 @@ use App\Http\Controllers\PeminjamanController;
 use App\Http\Controllers\DendaController;
 use App\Http\Controllers\PustakawanController;
 use App\Http\Controllers\RiwayatAktivitasController;
+use App\Http\Controllers\UlasanController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -98,3 +99,13 @@ Riwayat Aktivitas
 
 Route::get('/riwayat-aktivitas', [RiwayatAktivitasController::class, 'index']);
 Route::get('/riwayat-aktivitas/{id}', [RiwayatAktivitasController::class, 'show']);
+
+/*-----------------------------------------------------------------------
+Ulasan (MongoDB)
+-----------------------------------------------------------------------*/
+
+Route::get('/ulasan', [UlasanController::class, 'index']);
+Route::get('/ulasan/{id}', [UlasanController::class, 'show']);
+Route::post('/ulasan', [UlasanController::class, 'store']);
+Route::put('/ulasan/{id}', [UlasanController::class, 'update']);
+Route::delete('/ulasan/{id}', [UlasanController::class, 'destroy']);
