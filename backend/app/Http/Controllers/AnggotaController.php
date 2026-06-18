@@ -47,7 +47,7 @@ class AnggotaController extends Controller
             'alamat' => $request->alamat,
             'no_telepon' => $request->no_telepon,
             'email' => $request->email,
-            'tanggal_daftar' => $request->tanggal_daftar,
+            'tanggal_daftar' => $request->tanggal_daftar ?: now()->toDateString(),
             'status' => $request->status
         ]);
 
