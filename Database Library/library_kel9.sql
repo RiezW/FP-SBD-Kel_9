@@ -3,9 +3,13 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Jun 14, 2026 at 07:35 AM
+-- Generation Time: Jun 18, 2026 at 08:29 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
+
+DROP DATABASE IF EXISTS `library_kel9`;
+CREATE DATABASE `library_kel9`;
+USE `library_kel9`;
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -20,15 +24,78 @@ SET time_zone = "+00:00";
 --
 -- Database: `library_kel9`
 --
-CREATE DATABASE IF NOT EXISTS `library_kel9` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE `library_kel9`;
 
 DELIMITER $$
 --
 -- Procedures
 --
-DROP PROCEDURE IF EXISTS `sp_kembali_buku`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_kembali_buku` (IN `p_id_peminjaman` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ProsesPembayaranDenda` (IN `p_id_denda` INT, IN `p_tgl_bayar` DATE)   BEGIN
+    DECLARE v_status_bayar VARCHAR(20);
+    
+    SELECT `status_bayar` INTO v_status_bayar 
+    FROM `denda`
+    WHERE `id_denda` = p_id_denda;
+    
+    IF v_status_bayar IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Data tidak ditemukan.';
+    ELSEIF v_status_bayar = 'lunas' THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Denda sudah dibayar lunas.';
+    ELSE
+        UPDATE `denda` 
+        SET `status_bayar` = 'lunas', `tgl_bayar` = p_tgl_bayar 
+        WHERE `id_denda` = p_id_denda;
+    END IF;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ProsesPeminjamanBuku` (IN `p_id_anggota` INT, IN `p_id_buku` INT, IN `p_id_petugas` INT, IN `p_durasi_hari` INT)   BEGIN
+    DECLARE v_stok         INT DEFAULT 0;
+    DECLARE v_aktif        VARCHAR(20);
+    DECLARE v_tgl_kembali  DATE;
+
+    SELECT `stok` INTO v_stok
+    FROM `buku`
+    WHERE `id_buku` = p_id_buku;
+
+    IF v_stok IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Buku tidak ditemukan.';
+    ELSEIF v_stok = 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Stok buku sudah habis.';
+    ELSE
+        SELECT `status` INTO v_aktif
+        FROM `anggota`
+        WHERE `id_anggota` = p_id_anggota;
+
+        IF v_aktif IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Anggota tidak ditemukan.';
+        ELSEIF v_aktif != 'aktif' THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Anggota non-aktif tidak bisa meminjam buku.';
+        ELSE
+            IF EXISTS (
+                SELECT 1
+                FROM `denda` d
+                JOIN `peminjaman` p ON d.`id_peminjaman` = p.`id_peminjaman`
+                WHERE p.`id_anggota` = p_id_anggota
+                  AND d.`status_bayar` = 'belum_bayar'
+            ) THEN
+                SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'kamu masih nunggak denda.';
+            ELSE
+                SET v_tgl_kembali = DATE_ADD(CURDATE(), INTERVAL p_durasi_hari DAY);
+                INSERT INTO `peminjaman`
+                    (`id_anggota`, `id_buku`, `id_petugas`, `tgl_pinjam`,
+                     `tgl_kembali_rencana`, `status`)
+                VALUES
+                    (p_id_anggota, p_id_buku, p_id_petugas, CURDATE(),
+                     v_tgl_kembali, 'dipinjam');
+
+                UPDATE `buku`
+                SET `stok` = `stok` - 1
+                WHERE `id_buku` = p_id_buku;
+            END IF;
+        END IF;
+    END IF;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `ProsesPengembalianBuku` (IN `p_id_peminjaman` INT, IN `p_tgl_kembali_aktual` DATE)   BEGIN
     DECLARE v_id_buku INT;
     DECLARE v_tgl_rencana DATE;
     DECLARE v_hari_terlambat INT;
@@ -41,17 +108,16 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_kembali_buku` (IN `p_id_peminjam
     WHERE `id_peminjaman` = p_id_peminjaman AND `status` = 'dipinjam';
     
     IF v_id_buku IS NULL THEN
-        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Data peminjaman tidak valid atau buku sudah dikembalikan!';
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Data tidak valid.';
     ELSE
         UPDATE `peminjaman` 
-        SET `tgl_kembali_aktual` = CURDATE(), 
-            `status` = 'dikembalikan'
+        SET `tgl_kembali_aktual` = p_tgl_kembali_aktual, `status` = 'dikembalikan'
         WHERE `id_peminjaman` = p_id_peminjaman;
         
         UPDATE `buku` SET `stok` = `stok` + 1 WHERE `id_buku` = v_id_buku;
         
-        IF CURDATE() > v_tgl_rencana THEN
-            SET v_hari_terlambat = DATEDIFF(CURDATE(), v_tgl_rencana);
+        IF p_tgl_kembali_aktual > v_tgl_rencana THEN
+            SET v_hari_terlambat = DATEDIFF(p_tgl_kembali_aktual, v_tgl_rencana);
             SET v_jumlah_denda = v_hari_terlambat * v_tarif_denda;
             
             INSERT INTO `denda` (`id_peminjaman`, `jumlah_denda`, `status_bayar`)
@@ -60,76 +126,27 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_kembali_buku` (IN `p_id_peminjam
     END IF;
 END$$
 
-DROP PROCEDURE IF EXISTS `sp_pinjam_buku`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_pinjam_buku` (IN `p_id_anggota` INT, IN `p_id_buku` INT, IN `p_id_petugas` INT, IN `p_durasi_hari` INT)   BEGIN
-    DECLARE v_stok         INT DEFAULT 0;
-    DECLARE v_status       VARCHAR(20);
-    DECLARE v_aktif        VARCHAR(20);
-    DECLARE v_tgl_kembali  DATE;
-
-    -- Cek stok buku
-    SELECT `stok` INTO v_stok
-    FROM `buku`
-    WHERE `id_buku` = p_id_buku;
-
-    IF v_stok IS NULL THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Buku tidak ditemukan!';
-    ELSEIF v_stok = 0 THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Stok buku habis, tidak bisa dipinjam!';
-    ELSE
-        -- Cek status anggota
-        SELECT `status` INTO v_aktif
-        FROM `anggota`
-        WHERE `id_anggota` = p_id_anggota;
-
-        IF v_aktif IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Anggota tidak ditemukan!';
-        ELSEIF v_aktif != 'aktif' THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Anggota non-aktif tidak dapat meminjam buku!';
-        ELSE
-            -- Cek apakah anggota masih punya denda belum bayar
-            IF EXISTS (
-                SELECT 1
-                FROM `denda` d
-                JOIN `peminjaman` p ON d.`id_peminjaman` = p.`id_peminjaman`
-                WHERE p.`id_anggota` = p_id_anggota
-                  AND d.`status_bayar` = 'belum_bayar'
-            ) THEN
-                SIGNAL SQLSTATE '45000'
-                    SET MESSAGE_TEXT = 'Anggota masih memiliki denda yang belum dibayar!';
-            ELSE
-                SET v_tgl_kembali = DATE_ADD(CURDATE(), INTERVAL p_durasi_hari DAY);
-
-                -- Insert record peminjaman
-                INSERT INTO `peminjaman`
-                    (`id_anggota`, `id_buku`, `id_petugas`, `tgl_pinjam`,
-                     `tgl_kembali_rencana`, `status`)
-                VALUES
-                    (p_id_anggota, p_id_buku, p_id_petugas, CURDATE(),
-                     v_tgl_kembali, 'dipinjam');
-
-                -- Kurangi stok
-                UPDATE `buku`
-                SET `stok` = `stok` - 1
-                WHERE `id_buku` = p_id_buku;
-            END IF;
-        END IF;
-    END IF;
-END$$
-
-DROP PROCEDURE IF EXISTS `sp_rekap_denda_per_periode`$$
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_rekap_denda_per_periode` (IN `p_tgl_mulai` DATE, IN `p_tgl_selesai` DATE)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `RekapDendaPeriode` (IN `p_tgl_mulai` DATE, IN `p_tgl_selesai` DATE)   BEGIN
     SELECT 
         COUNT(d.`id_denda`) AS `total_kasus_pelanggaran`,
         SUM(CASE WHEN d.`status_bayar` = 'lunas' THEN d.`jumlah_denda` ELSE 0 END) AS `total_pendapatan_masuk`,
-        SUM(CASE WHEN d.`status_bayar` = 'belum_bayar' THEN d.`jumlah_denda` ELSE 0 END) AS `total_piutang_denda`
+        SUM(CASE WHEN d.`status_bayar` = 'belum_bayar' THEN d.`jumlah_denda` ELSE 0 END) AS `total_hutang_denda`
     FROM `denda` d
     JOIN `peminjaman` p ON d.`id_peminjaman` = p.`id_peminjaman`
     WHERE p.`tgl_pinjam` BETWEEN p_tgl_mulai AND p_tgl_selesai;
+END$$
+
+--
+-- Functions
+--
+CREATE DEFINER=`root`@`localhost` FUNCTION `HitungTotalBukuDipinjam` (`p_id_anggota` INT) RETURNS INT(11) READS SQL DATA BEGIN
+    DECLARE v_total_pinjam INT;
+    
+    SELECT COUNT(*) INTO v_total_pinjam 
+    FROM `peminjaman` 
+    WHERE `id_anggota` = p_id_anggota AND `status` = 'dipinjam';
+    
+    RETURN v_total_pinjam;
 END$$
 
 DELIMITER ;
@@ -140,18 +157,15 @@ DELIMITER ;
 -- Table structure for table `anggota`
 --
 
-DROP TABLE IF EXISTS `anggota`;
-CREATE TABLE IF NOT EXISTS `anggota` (
-  `id_anggota` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `anggota` (
+  `id_anggota` int(11) NOT NULL,
   `nama` varchar(100) NOT NULL,
   `alamat` text DEFAULT NULL,
   `no_telepon` varchar(20) DEFAULT NULL,
   `email` varchar(100) DEFAULT NULL,
   `tanggal_daftar` date NOT NULL DEFAULT curdate(),
-  `status` enum('aktif','non-aktif') NOT NULL DEFAULT 'aktif',
-  PRIMARY KEY (`id_anggota`),
-  UNIQUE KEY `email` (`email`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `status` enum('aktif','non-aktif') NOT NULL DEFAULT 'aktif'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `anggota`
@@ -166,19 +180,33 @@ INSERT INTO `anggota` (`id_anggota`, `nama`, `alamat`, `no_telepon`, `email`, `t
 --
 -- Triggers `anggota`
 --
-DROP TRIGGER IF EXISTS `trg_sebelum_delete_anggota`;
 DELIMITER $$
-CREATE TRIGGER `trg_sebelum_delete_anggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatAnggotaBaru` AFTER INSERT ON `anggota` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'hapus_anggota', CONCAT('Data anggota dihapus: ', OLD.nama, ' (ID Lama: ', OLD.id_anggota, ')'));
+    VALUES (NEW.`id_anggota`, 'daftar', CONCAT('Anggota baru mendaftar: ', NEW.`nama`, ' (ID: ', NEW.`id_anggota`, ')'));
 END
 $$
 DELIMITER ;
-DROP TRIGGER IF EXISTS `trg_setelah_insert_anggota`;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_anggota` AFTER INSERT ON `anggota` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatHapusAnggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NEW.id_anggota, 'daftar', CONCAT('Anggota baru mendaftar: ', NEW.nama, ' (ID: ', NEW.id_anggota, ')'));
+    VALUES (NULL, 'hapus_anggota', CONCAT('Data anggota ', OLD.`nama`, ' (ID: ', OLD.`id_anggota`, ') dihapus.'));
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `ValidasiHapusAnggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
+    DECLARE v_buku_dipinjam INT;
+    DECLARE v_denda_belum_bayar INT;
+    
+    SELECT COUNT(*) INTO v_buku_dipinjam FROM `peminjaman` WHERE `id_anggota` = OLD.`id_anggota` AND `status` = 'dipinjam';
+    SELECT COUNT(*) INTO v_denda_belum_bayar FROM `denda` d JOIN `peminjaman` p ON d.`id_peminjaman` = p.`id_peminjaman` WHERE p.`id_anggota` = OLD.`id_anggota` AND d.`status_bayar` = 'belum_bayar';
+    
+    IF v_buku_dipinjam > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Gagal! Anggota masih memiliki buku yang belum dikembalikan.';
+    ELSEIF v_denda_belum_bayar > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Gagal! Anggota belum melunasi denda.';
+    END IF;
 END
 $$
 DELIMITER ;
@@ -186,22 +214,30 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
+-- Stand-in structure for view `anggotapalingaktif`
+-- (See below for the actual view)
+--
+CREATE TABLE `anggotapalingaktif` (
+`id_anggota` int(11)
+,`nama` varchar(100)
+,`total_peminjaman` bigint(21)
+);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `buku`
 --
 
-DROP TABLE IF EXISTS `buku`;
-CREATE TABLE IF NOT EXISTS `buku` (
-  `id_buku` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `buku` (
+  `id_buku` int(11) NOT NULL,
   `isbn` varchar(20) DEFAULT NULL,
   `judul` varchar(200) NOT NULL,
   `tahun_terbit` year(4) DEFAULT NULL,
   `penerbit` varchar(100) DEFAULT NULL,
   `stok` int(11) NOT NULL DEFAULT 0,
-  `id_pengarang` int(11) NOT NULL,
-  PRIMARY KEY (`id_buku`),
-  UNIQUE KEY `isbn` (`isbn`),
-  KEY `fk_buku_pengarang` (`id_pengarang`)
-) ENGINE=InnoDB AUTO_INCREMENT=61 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `id_pengarang` int(11) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `buku`
@@ -272,19 +308,17 @@ INSERT INTO `buku` (`id_buku`, `isbn`, `judul`, `tahun_terbit`, `penerbit`, `sto
 --
 -- Triggers `buku`
 --
-DROP TRIGGER IF EXISTS `trg_sebelum_delete_buku`;
 DELIMITER $$
-CREATE TRIGGER `trg_sebelum_delete_buku` BEFORE DELETE ON `buku` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatBukuBaru` AFTER INSERT ON `buku` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'hapus_buku', CONCAT('Buku dihapus: ', OLD.judul, ' (ID Buku: ', OLD.id_buku, ')'));
+    VALUES (NULL, 'tambah_buku', CONCAT('Judul buku baru dimasukkan: ', NEW.`judul`, ' (ID: ', NEW.`id_buku`, ')'));
 END
 $$
 DELIMITER ;
-DROP TRIGGER IF EXISTS `trg_setelah_insert_buku`;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_buku` AFTER INSERT ON `buku` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatHapusBuku` BEFORE DELETE ON `buku` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'tambah_buku', CONCAT('Buku baru ditambahkan: ', NEW.judul, ' (ISBN: ', IFNULL(NEW.isbn, '-'), ')'));
+    VALUES (NULL, 'hapus_buku', CONCAT('Buku berjudul [', OLD.`judul`, '] telah dihapus dari katalog.'));
 END
 $$
 DELIMITER ;
@@ -292,15 +326,24 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
+-- Stand-in structure for view `bukupalingbanyakdipinjam`
+-- (See below for the actual view)
+--
+CREATE TABLE `bukupalingbanyakdipinjam` (
+`id_buku` int(11)
+,`judul` varchar(200)
+,`total_dipinjam` bigint(21)
+);
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `buku_kategori`
 --
 
-DROP TABLE IF EXISTS `buku_kategori`;
-CREATE TABLE IF NOT EXISTS `buku_kategori` (
+CREATE TABLE `buku_kategori` (
   `id_buku` int(11) NOT NULL,
-  `id_kategori` int(11) NOT NULL,
-  PRIMARY KEY (`id_buku`,`id_kategori`),
-  KEY `fk_bk_kategori` (`id_kategori`)
+  `id_kategori` int(11) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -396,16 +439,13 @@ INSERT INTO `buku_kategori` (`id_buku`, `id_kategori`) VALUES
 -- Table structure for table `denda`
 --
 
-DROP TABLE IF EXISTS `denda`;
-CREATE TABLE IF NOT EXISTS `denda` (
-  `id_denda` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `denda` (
+  `id_denda` int(11) NOT NULL,
   `id_peminjaman` int(11) NOT NULL,
   `jumlah_denda` decimal(10,2) NOT NULL DEFAULT 0.00,
   `tgl_bayar` date DEFAULT NULL,
-  `status_bayar` enum('belum_bayar','lunas') NOT NULL DEFAULT 'belum_bayar',
-  PRIMARY KEY (`id_denda`),
-  UNIQUE KEY `id_peminjaman` (`id_peminjaman`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `status_bayar` enum('belum_bayar','lunas') NOT NULL DEFAULT 'belum_bayar'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `denda`
@@ -425,13 +465,11 @@ INSERT INTO `denda` (`id_denda`, `id_peminjaman`, `jumlah_denda`, `tgl_bayar`, `
 -- Table structure for table `kategori`
 --
 
-DROP TABLE IF EXISTS `kategori`;
-CREATE TABLE IF NOT EXISTS `kategori` (
-  `id_kategori` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `kategori` (
+  `id_kategori` int(11) NOT NULL,
   `nama_kategori` varchar(80) NOT NULL,
-  `deskripsi` text DEFAULT NULL,
-  PRIMARY KEY (`id_kategori`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `deskripsi` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `kategori`
@@ -451,21 +489,16 @@ INSERT INTO `kategori` (`id_kategori`, `nama_kategori`, `deskripsi`) VALUES
 -- Table structure for table `peminjaman`
 --
 
-DROP TABLE IF EXISTS `peminjaman`;
-CREATE TABLE IF NOT EXISTS `peminjaman` (
-  `id_peminjaman` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `peminjaman` (
+  `id_peminjaman` int(11) NOT NULL,
   `id_anggota` int(11) NOT NULL,
   `id_buku` int(11) NOT NULL,
   `id_petugas` int(11) NOT NULL,
   `tgl_pinjam` date NOT NULL DEFAULT curdate(),
   `tgl_kembali_rencana` date NOT NULL,
   `tgl_kembali_aktual` date DEFAULT NULL,
-  `status` enum('dipinjam','dikembalikan','terlambat') NOT NULL DEFAULT 'dipinjam',
-  PRIMARY KEY (`id_peminjaman`),
-  KEY `fk_pmj_anggota` (`id_anggota`),
-  KEY `fk_pmj_buku` (`id_buku`),
-  KEY `fk_pmj_petugas` (`id_petugas`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `status` enum('dipinjam','dikembalikan','terlambat') NOT NULL DEFAULT 'dipinjam'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `peminjaman`
@@ -496,39 +529,18 @@ INSERT INTO `peminjaman` (`id_peminjaman`, `id_anggota`, `id_buku`, `id_petugas`
 --
 -- Triggers `peminjaman`
 --
-DROP TRIGGER IF EXISTS `trg_setelah_insert_peminjaman`;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_peminjaman` AFTER INSERT ON `peminjaman` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatTransaksiPeminjaman` AFTER INSERT ON `peminjaman` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (
-        NEW.id_anggota,
-        'pinjam',
-        CONCAT(
-            'Buku ID ', NEW.id_buku,
-            ' dipinjam oleh anggota ID ', NEW.id_anggota,
-            ' (peminjaman ID: ', NEW.id_peminjaman,
-            ', tgl kembali rencana: ', NEW.tgl_kembali_rencana, ')'
-        )
-    );
+    VALUES (NEW.`id_anggota`, 'pinjam', CONCAT('Meminjam buku dengan ID: ', NEW.`id_buku`, ' (Petugas ID: ', NEW.`id_petugas`, ')'));
 END
 $$
 DELIMITER ;
-DROP TRIGGER IF EXISTS `trg_setelah_update_peminjaman`;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_update_peminjaman` AFTER UPDATE ON `peminjaman` FOR EACH ROW BEGIN
-    -- Hanya log ketika status berubah ke 'dikembalikan'
-    IF NEW.status = 'dikembalikan' AND OLD.status != 'dikembalikan' THEN
+CREATE TRIGGER `CatatTransaksiPengembalian` AFTER UPDATE ON `peminjaman` FOR EACH ROW BEGIN
+    IF OLD.`status` = 'dipinjam' AND NEW.`status` = 'dikembalikan' THEN
         INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-        VALUES (
-            NEW.id_anggota,
-            'kembali',
-            CONCAT(
-                'Buku ID ', NEW.id_buku,
-                ' dikembalikan oleh anggota ID ', NEW.id_anggota,
-                ' (peminjaman ID: ', NEW.id_peminjaman,
-                ', tgl kembali aktual: ', NEW.tgl_kembali_aktual, ')'
-            )
-        );
+        VALUES (NEW.`id_anggota`, 'kembali', CONCAT('Mengembalikan buku dari ID peminjaman: ', NEW.`id_peminjaman`));
     END IF;
 END
 $$
@@ -540,13 +552,11 @@ DELIMITER ;
 -- Table structure for table `pengarang`
 --
 
-DROP TABLE IF EXISTS `pengarang`;
-CREATE TABLE IF NOT EXISTS `pengarang` (
-  `id_pengarang` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `pengarang` (
+  `id_pengarang` int(11) NOT NULL,
   `nama` varchar(100) NOT NULL,
-  `biografi` text DEFAULT NULL,
-  PRIMARY KEY (`id_pengarang`)
-) ENGINE=InnoDB AUTO_INCREMENT=34 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `biografi` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `pengarang`
@@ -593,15 +603,12 @@ INSERT INTO `pengarang` (`id_pengarang`, `nama`, `biografi`) VALUES
 -- Table structure for table `pustakawan`
 --
 
-DROP TABLE IF EXISTS `pustakawan`;
-CREATE TABLE IF NOT EXISTS `pustakawan` (
-  `id_petugas` int(11) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `pustakawan` (
+  `id_petugas` int(11) NOT NULL,
   `nama` varchar(100) NOT NULL,
   `username` varchar(50) NOT NULL,
-  `password_hash` varchar(255) NOT NULL,
-  PRIMARY KEY (`id_petugas`),
-  UNIQUE KEY `username` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `password_hash` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `pustakawan`
@@ -620,16 +627,13 @@ INSERT INTO `pustakawan` (`id_petugas`, `nama`, `username`, `password_hash`) VAL
 -- Table structure for table `riwayat_aktivitas`
 --
 
-DROP TABLE IF EXISTS `riwayat_aktivitas`;
-CREATE TABLE IF NOT EXISTS `riwayat_aktivitas` (
-  `id_aktivitas` bigint(20) NOT NULL AUTO_INCREMENT,
+CREATE TABLE `riwayat_aktivitas` (
+  `id_aktivitas` bigint(20) NOT NULL,
   `id_anggota` int(11) DEFAULT NULL,
   `tipe_aksi` enum('login','pinjam','kembali','bayar_denda','daftar','hapus_anggota','tambah_buku','hapus_buku') NOT NULL,
   `detail` text DEFAULT NULL,
-  `timestamp` datetime NOT NULL DEFAULT current_timestamp(),
-  PRIMARY KEY (`id_aktivitas`),
-  KEY `fk_ra_anggota` (`id_anggota`)
-) ENGINE=InnoDB AUTO_INCREMENT=21 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  `timestamp` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `riwayat_aktivitas`
@@ -660,51 +664,140 @@ INSERT INTO `riwayat_aktivitas` (`id_aktivitas`, `id_anggota`, `tipe_aksi`, `det
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `vw_anggota_paling_aktif`
--- (See below for the actual view)
+-- Structure for view `anggotapalingaktif`
 --
-DROP VIEW IF EXISTS `vw_anggota_paling_aktif`;
-CREATE TABLE IF NOT EXISTS `vw_anggota_paling_aktif` (
-`id_anggota` int(11)
-,`nama` varchar(100)
-,`email` varchar(100)
-,`total_pinjam_buku` bigint(21)
-);
+DROP TABLE IF EXISTS `anggotapalingaktif`;
+
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `anggotapalingaktif`  AS SELECT `a`.`id_anggota` AS `id_anggota`, `a`.`nama` AS `nama`, count(`p`.`id_peminjaman`) AS `total_peminjaman` FROM (`anggota` `a` join `peminjaman` `p` on(`a`.`id_anggota` = `p`.`id_anggota`)) GROUP BY `a`.`id_anggota`, `a`.`nama` ORDER BY count(`p`.`id_peminjaman`) DESC ;
 
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `vw_buku_paling_dipinjam`
--- (See below for the actual view)
+-- Structure for view `bukupalingbanyakdipinjam`
 --
-DROP VIEW IF EXISTS `vw_buku_paling_dipinjam`;
-CREATE TABLE IF NOT EXISTS `vw_buku_paling_dipinjam` (
-`id_buku` int(11)
-,`isbn` varchar(20)
-,`judul` varchar(200)
-,`penerbit` varchar(100)
-,`total_peminjaman` bigint(21)
-);
+DROP TABLE IF EXISTS `bukupalingbanyakdipinjam`;
 
--- --------------------------------------------------------
+CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `bukupalingbanyakdipinjam`  AS SELECT `b`.`id_buku` AS `id_buku`, `b`.`judul` AS `judul`, count(`p`.`id_peminjaman`) AS `total_dipinjam` FROM (`buku` `b` join `peminjaman` `p` on(`b`.`id_buku` = `p`.`id_buku`)) GROUP BY `b`.`id_buku`, `b`.`judul` ORDER BY count(`p`.`id_peminjaman`) DESC ;
 
 --
--- Structure for view `vw_anggota_paling_aktif`
+-- Indexes for dumped tables
 --
-DROP TABLE IF EXISTS `vw_anggota_paling_aktif`;
-
-DROP VIEW IF EXISTS `vw_anggota_paling_aktif`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_anggota_paling_aktif`  AS SELECT `a`.`id_anggota` AS `id_anggota`, `a`.`nama` AS `nama`, `a`.`email` AS `email`, count(`p`.`id_peminjaman`) AS `total_pinjam_buku` FROM (`peminjaman` `p` join `anggota` `a` on(`p`.`id_anggota` = `a`.`id_anggota`)) GROUP BY `a`.`id_anggota`, `a`.`nama`, `a`.`email` ORDER BY count(`p`.`id_peminjaman`) DESC LIMIT 0, 10 ;
-
--- --------------------------------------------------------
 
 --
--- Structure for view `vw_buku_paling_dipinjam`
+-- Indexes for table `anggota`
 --
-DROP TABLE IF EXISTS `vw_buku_paling_dipinjam`;
+ALTER TABLE `anggota`
+  ADD PRIMARY KEY (`id_anggota`),
+  ADD UNIQUE KEY `email` (`email`);
 
-DROP VIEW IF EXISTS `vw_buku_paling_dipinjam`;
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `vw_buku_paling_dipinjam`  AS SELECT `b`.`id_buku` AS `id_buku`, `b`.`isbn` AS `isbn`, `b`.`judul` AS `judul`, `b`.`penerbit` AS `penerbit`, count(`p`.`id_peminjaman`) AS `total_peminjaman` FROM (`peminjaman` `p` join `buku` `b` on(`p`.`id_buku` = `b`.`id_buku`)) GROUP BY `b`.`id_buku`, `b`.`isbn`, `b`.`judul`, `b`.`penerbit` ORDER BY count(`p`.`id_peminjaman`) DESC LIMIT 0, 10 ;
+--
+-- Indexes for table `buku`
+--
+ALTER TABLE `buku`
+  ADD PRIMARY KEY (`id_buku`),
+  ADD UNIQUE KEY `isbn` (`isbn`),
+  ADD KEY `fk_buku_pengarang` (`id_pengarang`);
+
+--
+-- Indexes for table `buku_kategori`
+--
+ALTER TABLE `buku_kategori`
+  ADD PRIMARY KEY (`id_buku`,`id_kategori`),
+  ADD KEY `fk_bk_kategori` (`id_kategori`);
+
+--
+-- Indexes for table `denda`
+--
+ALTER TABLE `denda`
+  ADD PRIMARY KEY (`id_denda`),
+  ADD UNIQUE KEY `id_peminjaman` (`id_peminjaman`);
+
+--
+-- Indexes for table `kategori`
+--
+ALTER TABLE `kategori`
+  ADD PRIMARY KEY (`id_kategori`);
+
+--
+-- Indexes for table `peminjaman`
+--
+ALTER TABLE `peminjaman`
+  ADD PRIMARY KEY (`id_peminjaman`),
+  ADD KEY `fk_pmj_anggota` (`id_anggota`),
+  ADD KEY `fk_pmj_buku` (`id_buku`),
+  ADD KEY `fk_pmj_petugas` (`id_petugas`);
+
+--
+-- Indexes for table `pengarang`
+--
+ALTER TABLE `pengarang`
+  ADD PRIMARY KEY (`id_pengarang`);
+
+--
+-- Indexes for table `pustakawan`
+--
+ALTER TABLE `pustakawan`
+  ADD PRIMARY KEY (`id_petugas`),
+  ADD UNIQUE KEY `username` (`username`);
+
+--
+-- Indexes for table `riwayat_aktivitas`
+--
+ALTER TABLE `riwayat_aktivitas`
+  ADD PRIMARY KEY (`id_aktivitas`),
+  ADD KEY `fk_ra_anggota` (`id_anggota`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `anggota`
+--
+ALTER TABLE `anggota`
+  MODIFY `id_anggota` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
+
+--
+-- AUTO_INCREMENT for table `buku`
+--
+ALTER TABLE `buku`
+  MODIFY `id_buku` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=61;
+
+--
+-- AUTO_INCREMENT for table `denda`
+--
+ALTER TABLE `denda`
+  MODIFY `id_denda` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `kategori`
+--
+ALTER TABLE `kategori`
+  MODIFY `id_kategori` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `peminjaman`
+--
+ALTER TABLE `peminjaman`
+  MODIFY `id_peminjaman` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+
+--
+-- AUTO_INCREMENT for table `pengarang`
+--
+ALTER TABLE `pengarang`
+  MODIFY `id_pengarang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=34;
+
+--
+-- AUTO_INCREMENT for table `pustakawan`
+--
+ALTER TABLE `pustakawan`
+  MODIFY `id_petugas` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+
+--
+-- AUTO_INCREMENT for table `riwayat_aktivitas`
+--
+ALTER TABLE `riwayat_aktivitas`
+  MODIFY `id_aktivitas` bigint(20) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Constraints for dumped tables
