@@ -242,16 +242,16 @@ INSERT INTO `buku` (`id_buku`, `isbn`, `judul`, `tahun_terbit`, `penerbit`, `sto
 
 ```sql
 DELIMITER $$
-CREATE TRIGGER `trg_sebelum_delete_buku` BEFORE DELETE ON `buku` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatBukuBaru` AFTER INSERT ON `buku` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'hapus_buku', CONCAT('Buku dihapus: ', OLD.judul, ' (ID Buku: ', OLD.id_buku, ')'));
+    VALUES (NULL, 'tambah_buku', CONCAT('Judul buku baru dimasukkan: ', NEW.`judul`, ' (ID: ', NEW.`id_buku`, ')'));
 END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_buku` AFTER INSERT ON `buku` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatHapusBuku` BEFORE DELETE ON `buku` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'tambah_buku', CONCAT('Buku baru ditambahkan: ', NEW.judul, ' (ISBN: ', IFNULL(NEW.isbn, '-'), ')'));
+    VALUES (NULL, 'hapus_buku', CONCAT('Buku berjudul [', OLD.`judul`, '] telah dihapus dari katalog.'));
 END
 $$
 DELIMITER ;
@@ -424,16 +424,32 @@ INSERT INTO `anggota` (`id_anggota`, `nama`, `alamat`, `no_telepon`, `email`, `t
 
 ```sql
 DELIMITER $$
-CREATE TRIGGER `trg_sebelum_delete_anggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatAnggotaBaru` AFTER INSERT ON `anggota` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'hapus_anggota', CONCAT('Data anggota dihapus: ', OLD.nama, ' (ID Lama: ', OLD.id_anggota, ')'));
+    VALUES (NEW.`id_anggota`, 'daftar', CONCAT('Anggota baru mendaftar: ', NEW.`nama`, ' (ID: ', NEW.`id_anggota`, ')'));
 END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_anggota` AFTER INSERT ON `anggota` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatHapusAnggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NEW.id_anggota, 'daftar', CONCAT('Anggota baru mendaftar: ', NEW.nama, ' (ID: ', NEW.id_anggota, ')'));
+    VALUES (NULL, 'hapus_anggota', CONCAT('Data anggota ', OLD.`nama`, ' (ID: ', OLD.`id_anggota`, ') dihapus.'));
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `ValidasiHapusAnggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
+    DECLARE v_buku_dipinjam INT;
+    DECLARE v_denda_belum_bayar INT;
+    
+    SELECT COUNT(*) INTO v_buku_dipinjam FROM `peminjaman` WHERE `id_anggota` = OLD.`id_anggota` AND `status` = 'dipinjam';
+    SELECT COUNT(*) INTO v_denda_belum_bayar FROM `denda` d JOIN `peminjaman` p ON d.`id_peminjaman` = p.`id_peminjaman` WHERE p.`id_anggota` = OLD.`id_anggota` AND d.`status_bayar` = 'belum_bayar';
+    
+    IF v_buku_dipinjam > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Gagal! Anggota masih memiliki buku yang belum dikembalikan.';
+    ELSEIF v_denda_belum_bayar > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Gagal! Anggota belum melunasi denda.';
+    END IF;
 END
 $$
 DELIMITER ;
@@ -524,36 +540,17 @@ INSERT INTO `peminjaman` (`id_peminjaman`, `id_anggota`, `id_buku`, `id_petugas`
 
 ```sql
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_peminjaman` AFTER INSERT ON `peminjaman` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatTransaksiPeminjaman` AFTER INSERT ON `peminjaman` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (
-        NEW.id_anggota,
-        'pinjam',
-        CONCAT(
-            'Buku ID ', NEW.id_buku,
-            ' dipinjam oleh anggota ID ', NEW.id_anggota,
-            ' (peminjaman ID: ', NEW.id_peminjaman,
-            ', tgl kembali rencana: ', NEW.tgl_kembali_rencana, ')'
-        )
-    );
+    VALUES (NEW.`id_anggota`, 'pinjam', CONCAT('Meminjam buku dengan ID: ', NEW.`id_buku`, ' (Petugas ID: ', NEW.`id_petugas`, ')'));
 END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_update_peminjaman` AFTER UPDATE ON `peminjaman` FOR EACH ROW BEGIN
-    -- Hanya log ketika status berubah ke 'dikembalikan'
-    IF NEW.status = 'dikembalikan' AND OLD.status != 'dikembalikan' THEN
+CREATE TRIGGER `CatatTransaksiPengembalian` AFTER UPDATE ON `peminjaman` FOR EACH ROW BEGIN
+    IF OLD.`status` = 'dipinjam' AND NEW.`status` = 'dikembalikan' THEN
         INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-        VALUES (
-            NEW.id_anggota,
-            'kembali',
-            CONCAT(
-                'Buku ID ', NEW.id_buku,
-                ' dikembalikan oleh anggota ID ', NEW.id_anggota,
-                ' (peminjaman ID: ', NEW.id_peminjaman,
-                ', tgl kembali aktual: ', NEW.tgl_kembali_aktual, ')'
-            )
-        );
+        VALUES (NEW.`id_anggota`, 'kembali', CONCAT('Mengembalikan buku dari ID peminjaman: ', NEW.`id_peminjaman`));
     END IF;
 END
 $$
