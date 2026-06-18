@@ -242,16 +242,16 @@ INSERT INTO `buku` (`id_buku`, `isbn`, `judul`, `tahun_terbit`, `penerbit`, `sto
 
 ```sql
 DELIMITER $$
-CREATE TRIGGER `trg_sebelum_delete_buku` BEFORE DELETE ON `buku` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatBukuBaru` AFTER INSERT ON `buku` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'hapus_buku', CONCAT('Buku dihapus: ', OLD.judul, ' (ID Buku: ', OLD.id_buku, ')'));
+    VALUES (NULL, 'tambah_buku', CONCAT('Judul buku baru dimasukkan: ', NEW.`judul`, ' (ID: ', NEW.`id_buku`, ')'));
 END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_buku` AFTER INSERT ON `buku` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatHapusBuku` BEFORE DELETE ON `buku` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'tambah_buku', CONCAT('Buku baru ditambahkan: ', NEW.judul, ' (ISBN: ', IFNULL(NEW.isbn, '-'), ')'));
+    VALUES (NULL, 'hapus_buku', CONCAT('Buku berjudul [', OLD.`judul`, '] telah dihapus dari katalog.'));
 END
 $$
 DELIMITER ;
@@ -424,16 +424,32 @@ INSERT INTO `anggota` (`id_anggota`, `nama`, `alamat`, `no_telepon`, `email`, `t
 
 ```sql
 DELIMITER $$
-CREATE TRIGGER `trg_sebelum_delete_anggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatAnggotaBaru` AFTER INSERT ON `anggota` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NULL, 'hapus_anggota', CONCAT('Data anggota dihapus: ', OLD.nama, ' (ID Lama: ', OLD.id_anggota, ')'));
+    VALUES (NEW.`id_anggota`, 'daftar', CONCAT('Anggota baru mendaftar: ', NEW.`nama`, ' (ID: ', NEW.`id_anggota`, ')'));
 END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_anggota` AFTER INSERT ON `anggota` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatHapusAnggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (NEW.id_anggota, 'daftar', CONCAT('Anggota baru mendaftar: ', NEW.nama, ' (ID: ', NEW.id_anggota, ')'));
+    VALUES (NULL, 'hapus_anggota', CONCAT('Data anggota ', OLD.`nama`, ' (ID: ', OLD.`id_anggota`, ') dihapus.'));
+END
+$$
+DELIMITER ;
+DELIMITER $$
+CREATE TRIGGER `ValidasiHapusAnggota` BEFORE DELETE ON `anggota` FOR EACH ROW BEGIN
+    DECLARE v_buku_dipinjam INT;
+    DECLARE v_denda_belum_bayar INT;
+    
+    SELECT COUNT(*) INTO v_buku_dipinjam FROM `peminjaman` WHERE `id_anggota` = OLD.`id_anggota` AND `status` = 'dipinjam';
+    SELECT COUNT(*) INTO v_denda_belum_bayar FROM `denda` d JOIN `peminjaman` p ON d.`id_peminjaman` = p.`id_peminjaman` WHERE p.`id_anggota` = OLD.`id_anggota` AND d.`status_bayar` = 'belum_bayar';
+    
+    IF v_buku_dipinjam > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Gagal! Anggota masih memiliki buku yang belum dikembalikan.';
+    ELSEIF v_denda_belum_bayar > 0 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Gagal! Anggota belum melunasi denda.';
+    END IF;
 END
 $$
 DELIMITER ;
@@ -524,36 +540,17 @@ INSERT INTO `peminjaman` (`id_peminjaman`, `id_anggota`, `id_buku`, `id_petugas`
 
 ```sql
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_insert_peminjaman` AFTER INSERT ON `peminjaman` FOR EACH ROW BEGIN
+CREATE TRIGGER `CatatTransaksiPeminjaman` AFTER INSERT ON `peminjaman` FOR EACH ROW BEGIN
     INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (
-        NEW.id_anggota,
-        'pinjam',
-        CONCAT(
-            'Buku ID ', NEW.id_buku,
-            ' dipinjam oleh anggota ID ', NEW.id_anggota,
-            ' (peminjaman ID: ', NEW.id_peminjaman,
-            ', tgl kembali rencana: ', NEW.tgl_kembali_rencana, ')'
-        )
-    );
+    VALUES (NEW.`id_anggota`, 'pinjam', CONCAT('Meminjam buku dengan ID: ', NEW.`id_buku`, ' (Petugas ID: ', NEW.`id_petugas`, ')'));
 END
 $$
 DELIMITER ;
 DELIMITER $$
-CREATE TRIGGER `trg_setelah_update_peminjaman` AFTER UPDATE ON `peminjaman` FOR EACH ROW BEGIN
-    -- Hanya log ketika status berubah ke 'dikembalikan'
-    IF NEW.status = 'dikembalikan' AND OLD.status != 'dikembalikan' THEN
+CREATE TRIGGER `CatatTransaksiPengembalian` AFTER UPDATE ON `peminjaman` FOR EACH ROW BEGIN
+    IF OLD.`status` = 'dipinjam' AND NEW.`status` = 'dikembalikan' THEN
         INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-        VALUES (
-            NEW.id_anggota,
-            'kembali',
-            CONCAT(
-                'Buku ID ', NEW.id_buku,
-                ' dikembalikan oleh anggota ID ', NEW.id_anggota,
-                ' (peminjaman ID: ', NEW.id_peminjaman,
-                ', tgl kembali aktual: ', NEW.tgl_kembali_aktual, ')'
-            )
-        );
+        VALUES (NEW.`id_anggota`, 'kembali', CONCAT('Mengembalikan buku dari ID peminjaman: ', NEW.`id_peminjaman`));
     END IF;
 END
 $$
@@ -633,270 +630,6 @@ Nilai `tipe_aksi` yang didukung: `login`, `pinjam`, `kembali`, `bayar_denda`, `d
   ```bash
   mysql -u root -p < library_kel9.sql
   ```
-
-### Contoh Query
-
-```sql
--- Daftar semua buku beserta nama pengarang dan kategorinya
-SELECT b.judul, p.nama AS pengarang, GROUP_CONCAT(k.nama_kategori) AS kategori
-FROM buku b
-JOIN pengarang p ON b.id_pengarang = p.id_pengarang
-JOIN buku_kategori bk ON b.id_buku = bk.id_buku
-JOIN kategori k ON bk.id_kategori = k.id_kategori
-GROUP BY b.id_buku;
-
--- Cek stok buku yang tersedia (stok > 0)
-SELECT judul, penerbit, stok FROM buku WHERE stok > 0 ORDER BY stok DESC;
-
--- Lihat riwayat aktivitas terbaru
-SELECT * FROM riwayat_aktivitas ORDER BY timestamp DESC LIMIT 10;
-```
-
-Yang baru di file tambahan_library_kel9.sql:
-
-[1] sp_pinjam_buku — 4 parameter: id_anggota, id_buku, id_petugas, durasi_hari. Validasi bertingkat: stok tersedia → anggota aktif → tidak ada denda belum bayar → baru INSERT + kurangi stok.
-
-[2] trg_setelah_insert_peminjaman — auto-log ke riwayat_aktivitas dengan tipe_aksi = 'pinjam' setiap ada peminjaman baru.
-
-[3] trg_setelah_update_peminjaman — auto-log tipe_aksi = 'kembali' ketika status berubah jadi 'dikembalikan' (cek OLD.status != NEW.status supaya tidak double log).
-
-[4] Dummy data peminjaman — 20 baris, 4 skenario:
-SkenarioIDKeteranganA — tepat waktu1–6Dikembalikan sebelum/tepat jatuh tempoB — terlambat7–12Dikembalikan terlambat, ada dendaC — aktif normal13–16Masih dipinjam, belum jatuh tempoD — terlambat aktif17–20Masih dipinjam, sudah lewat jatuh tempo
-
-[5] Dummy data denda — 6 baris dari skenario B, tarif Rp 2.000/hari. 3 sudah lunas, 3 masih belum_bayar — bagus untuk demo view dan rekap.
-
----
-<img width="1128" height="930" alt="image" src="https://github.com/user-attachments/assets/ad951e41-4d53-4f07-9af3-51548accf127" />
-
-```sql
-> *Database ini dibuat sebagai bagian dari Final Project mata kuliah Sistem Basis Data, Semester Genap 2025/2026.*
-
--- ================================================================
--- FILE TAMBAHAN: library_kel9
--- Berisi: sp_pinjam_buku, trigger peminjaman/pengembalian,
---          dummy data peminjaman & denda
--- ================================================================
-
--- ----------------------------------------------------------------
--- [1] STORED PROCEDURE: sp_pinjam_buku
--- ----------------------------------------------------------------
-DELIMITER $$
-
-CREATE DEFINER=`root`@`localhost` PROCEDURE `sp_pinjam_buku` (
-    IN `p_id_anggota`  INT,
-    IN `p_id_buku`     INT,
-    IN `p_id_petugas`  INT,
-    IN `p_durasi_hari` INT   -- misal: 7 atau 14
-)
-BEGIN
-    DECLARE v_stok         INT DEFAULT 0;
-    DECLARE v_status       VARCHAR(20);
-    DECLARE v_aktif        VARCHAR(20);
-    DECLARE v_tgl_kembali  DATE;
-
-    -- Cek stok buku
-    SELECT `stok` INTO v_stok
-    FROM `buku`
-    WHERE `id_buku` = p_id_buku;
-
-    IF v_stok IS NULL THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Buku tidak ditemukan!';
-    ELSEIF v_stok = 0 THEN
-        SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Stok buku habis, tidak bisa dipinjam!';
-    ELSE
-        -- Cek status anggota
-        SELECT `status` INTO v_aktif
-        FROM `anggota`
-        WHERE `id_anggota` = p_id_anggota;
-
-        IF v_aktif IS NULL THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Anggota tidak ditemukan!';
-        ELSEIF v_aktif != 'aktif' THEN
-            SIGNAL SQLSTATE '45000'
-                SET MESSAGE_TEXT = 'Anggota non-aktif tidak dapat meminjam buku!';
-        ELSE
-            -- Cek apakah anggota masih punya denda belum bayar
-            IF EXISTS (
-                SELECT 1
-                FROM `denda` d
-                JOIN `peminjaman` p ON d.`id_peminjaman` = p.`id_peminjaman`
-                WHERE p.`id_anggota` = p_id_anggota
-                  AND d.`status_bayar` = 'belum_bayar'
-            ) THEN
-                SIGNAL SQLSTATE '45000'
-                    SET MESSAGE_TEXT = 'Anggota masih memiliki denda yang belum dibayar!';
-            ELSE
-                SET v_tgl_kembali = DATE_ADD(CURDATE(), INTERVAL p_durasi_hari DAY);
-
-                -- Insert record peminjaman
-                INSERT INTO `peminjaman`
-                    (`id_anggota`, `id_buku`, `id_petugas`, `tgl_pinjam`,
-                     `tgl_kembali_rencana`, `status`)
-                VALUES
-                    (p_id_anggota, p_id_buku, p_id_petugas, CURDATE(),
-                     v_tgl_kembali, 'dipinjam');
-
-                -- Kurangi stok
-                UPDATE `buku`
-                SET `stok` = `stok` - 1
-                WHERE `id_buku` = p_id_buku;
-            END IF;
-        END IF;
-    END IF;
-END$$
-
-DELIMITER ;
-
-
--- ----------------------------------------------------------------
--- [2] TRIGGER: log peminjaman ke riwayat_aktivitas
--- ----------------------------------------------------------------
-DELIMITER $$
-
-CREATE TRIGGER `trg_setelah_insert_peminjaman`
-AFTER INSERT ON `peminjaman`
-FOR EACH ROW
-BEGIN
-    INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-    VALUES (
-        NEW.id_anggota,
-        'pinjam',
-        CONCAT(
-            'Buku ID ', NEW.id_buku,
-            ' dipinjam oleh anggota ID ', NEW.id_anggota,
-            ' (peminjaman ID: ', NEW.id_peminjaman,
-            ', tgl kembali rencana: ', NEW.tgl_kembali_rencana, ')'
-        )
-    );
-END$$
-
-DELIMITER ;
-
-
--- ----------------------------------------------------------------
--- [3] TRIGGER: log pengembalian ke riwayat_aktivitas
--- ----------------------------------------------------------------
-DELIMITER $$
-
-CREATE TRIGGER `trg_setelah_update_peminjaman`
-AFTER UPDATE ON `peminjaman`
-FOR EACH ROW
-BEGIN
-    -- Hanya log ketika status berubah ke 'dikembalikan'
-    IF NEW.status = 'dikembalikan' AND OLD.status != 'dikembalikan' THEN
-        INSERT INTO `riwayat_aktivitas` (`id_anggota`, `tipe_aksi`, `detail`)
-        VALUES (
-            NEW.id_anggota,
-            'kembali',
-            CONCAT(
-                'Buku ID ', NEW.id_buku,
-                ' dikembalikan oleh anggota ID ', NEW.id_anggota,
-                ' (peminjaman ID: ', NEW.id_peminjaman,
-                ', tgl kembali aktual: ', NEW.tgl_kembali_aktual, ')'
-            )
-        );
-    END IF;
-END$$
-
-DELIMITER ;
-
-
--- ================================================================
--- [4] DUMMY DATA: tabel peminjaman
---
--- Skenario peminjaman:
---   A  = tepat waktu (sudah dikembalikan)
---   B  = terlambat   (sudah dikembalikan, ada denda)
---   C  = masih dipinjam, belum jatuh tempo
---   D  = masih dipinjam, sudah melewati jatuh tempo (terlambat)
---
--- id_anggota 1-4, id_buku 1-60, id_petugas 1-5
--- ================================================================
-
--- Nonaktifkan trigger sementara agar log riwayat tidak menumpuk
--- saat insert dummy; hapus 2 baris SET berikut jika ingin log ikut masuk
-SET @OLD_SQL_SAFE_UPDATES = @@SQL_SAFE_UPDATES;
-SET SQL_SAFE_UPDATES = 0;
-
-INSERT INTO `peminjaman`
-    (`id_peminjaman`, `id_anggota`, `id_buku`, `id_petugas`,
-     `tgl_pinjam`, `tgl_kembali_rencana`, `tgl_kembali_aktual`, `status`)
-VALUES
-
--- ── Skenario A: dikembalikan tepat waktu ──────────────────────────
-(1,  1, 1,  1, '2026-05-01', '2026-05-08', '2026-05-07', 'dikembalikan'),
-(2,  2, 5,  2, '2026-05-03', '2026-05-10', '2026-05-09', 'dikembalikan'),
-(3,  3, 11, 3, '2026-05-05', '2026-05-12', '2026-05-12', 'dikembalikan'),
-(4,  4, 41, 4, '2026-05-06', '2026-05-13', '2026-05-13', 'dikembalikan'),
-(5,  1, 21, 5, '2026-05-10', '2026-05-17', '2026-05-16', 'dikembalikan'),
-(6,  2, 52, 1, '2026-05-12', '2026-05-19', '2026-05-18', 'dikembalikan'),
-
--- ── Skenario B: dikembalikan terlambat (ada denda) ────────────────
-(7,  3, 2,  2, '2026-05-01', '2026-05-08', '2026-05-12', 'dikembalikan'),  -- 4 hari telat
-(8,  4, 6,  3, '2026-05-04', '2026-05-11', '2026-05-18', 'dikembalikan'),  -- 7 hari telat
-(9,  1, 14, 4, '2026-05-07', '2026-05-14', '2026-05-17', 'dikembalikan'),  -- 3 hari telat
-(10, 2, 37, 5, '2026-05-10', '2026-05-17', '2026-05-25', 'dikembalikan'),  -- 8 hari telat
-(11, 3, 54, 1, '2026-05-13', '2026-05-20', '2026-05-24', 'dikembalikan'),  -- 4 hari telat
-(12, 4, 40, 2, '2026-05-15', '2026-05-22', '2026-05-29', 'dikembalikan'),  -- 7 hari telat
-
--- ── Skenario C: masih dipinjam, belum jatuh tempo ────────────────
-(13, 1, 4,  3, '2026-06-05', '2026-06-19', NULL, 'dipinjam'),
-(14, 2, 22, 4, '2026-06-06', '2026-06-20', NULL, 'dipinjam'),
-(15, 3, 58, 5, '2026-06-07', '2026-06-21', NULL, 'dipinjam'),
-(16, 4, 15, 1, '2026-06-08', '2026-06-22', NULL, 'dipinjam'),
-
--- ── Skenario D: masih dipinjam, sudah melewati jatuh tempo ───────
-(17, 1, 50, 2, '2026-05-20', '2026-05-27', NULL, 'terlambat'),  -- ~15 hari telat per 11 Jun
-(18, 2, 46, 3, '2026-05-22', '2026-05-29', NULL, 'terlambat'),  -- ~13 hari telat
-(19, 3, 9,  4, '2026-05-25', '2026-06-01', NULL, 'terlambat'),  -- ~10 hari telat
-(20, 4, 30, 5, '2026-05-28', '2026-06-04', NULL, 'terlambat');  --  ~7 hari telat
-
-
--- ================================================================
--- [5] DUMMY DATA: tabel denda
---
--- Tarif: Rp 2.000 / hari keterlambatan (sesuai sp_kembali_buku)
--- Hanya untuk peminjaman yang dikembalikan terlambat (Skenario B)
--- Sebagian sudah lunas, sebagian belum
--- ================================================================
-
-INSERT INTO `denda`
-    (`id_denda`, `id_peminjaman`, `jumlah_denda`, `tgl_bayar`, `status_bayar`)
-VALUES
---  pmj_id=7  : 4 hari × 2000 = 8.000
-(1,  7,  8000.00, '2026-05-13', 'lunas'),
-
---  pmj_id=8  : 7 hari × 2000 = 14.000
-(2,  8,  14000.00, NULL, 'belum_bayar'),
-
---  pmj_id=9  : 3 hari × 2000 = 6.000
-(3,  9,  6000.00, '2026-05-18', 'lunas'),
-
---  pmj_id=10 : 8 hari × 2000 = 16.000
-(4,  10, 16000.00, NULL, 'belum_bayar'),
-
---  pmj_id=11 : 4 hari × 2000 = 8.000
-(5,  11, 8000.00, '2026-05-25', 'lunas'),
-
---  pmj_id=12 : 7 hari × 2000 = 14.000
-(6,  12, 14000.00, NULL, 'belum_bayar');
-
-
--- Kembalikan safe updates
-SET SQL_SAFE_UPDATES = @OLD_SQL_SAFE_UPDATES;
-
--- ================================================================
--- Catatan:
---  - AUTO_INCREMENT peminjaman dilanjutkan dari 21
---  - AUTO_INCREMENT denda dilanjutkan dari 7
--- ================================================================
-
-ALTER TABLE `peminjaman` MODIFY `id_peminjaman` INT NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
-ALTER TABLE `denda`      MODIFY `id_denda`      INT NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-```
 
 
 
