@@ -214,18 +214,6 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 --
--- Stand-in structure for view `anggotapalingaktif`
--- (See below for the actual view)
---
-CREATE TABLE `anggotapalingaktif` (
-`id_anggota` int(11)
-,`nama` varchar(100)
-,`total_peminjaman` bigint(21)
-);
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `buku`
 --
 
@@ -322,19 +310,6 @@ CREATE TRIGGER `CatatHapusBuku` BEFORE DELETE ON `buku` FOR EACH ROW BEGIN
 END
 $$
 DELIMITER ;
-
--- --------------------------------------------------------
-
---
--- Stand-in structure for view `bukupalingbanyakdipinjam`
--- (See below for the actual view)
---
-CREATE TABLE `bukupalingbanyakdipinjam` (
-`id_buku` int(11)
-,`judul` varchar(200)
-,`total_dipinjam` bigint(21)
-);
-
 -- --------------------------------------------------------
 
 --
@@ -666,19 +641,25 @@ INSERT INTO `riwayat_aktivitas` (`id_aktivitas`, `id_anggota`, `tipe_aksi`, `det
 --
 -- Structure for view `anggotapalingaktif`
 --
-DROP TABLE IF EXISTS `anggotapalingaktif`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `anggotapalingaktif`  AS SELECT `a`.`id_anggota` AS `id_anggota`, `a`.`nama` AS `nama`, count(`p`.`id_peminjaman`) AS `total_peminjaman` FROM (`anggota` `a` join `peminjaman` `p` on(`a`.`id_anggota` = `p`.`id_anggota`)) GROUP BY `a`.`id_anggota`, `a`.`nama` ORDER BY count(`p`.`id_peminjaman`) DESC ;
-
+DROP VIEW IF EXISTS `AnggotaPalingAktif`;
+CREATE VIEW `AnggotaPalingAktif` AS 
+SELECT a.`id_anggota`, a.`nama`, COUNT(p.`id_peminjaman`) AS `total_peminjaman` 
+FROM `anggota` a 
+JOIN `peminjaman` p ON a.`id_anggota` = p.`id_anggota`
+GROUP BY a.`id_anggota`, a.`nama` 
+ORDER BY `total_peminjaman` DESC;
 -- --------------------------------------------------------
 
 --
 -- Structure for view `bukupalingbanyakdipinjam`
 --
-DROP TABLE IF EXISTS `bukupalingbanyakdipinjam`;
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`root`@`localhost` SQL SECURITY DEFINER VIEW `bukupalingbanyakdipinjam`  AS SELECT `b`.`id_buku` AS `id_buku`, `b`.`judul` AS `judul`, count(`p`.`id_peminjaman`) AS `total_dipinjam` FROM (`buku` `b` join `peminjaman` `p` on(`b`.`id_buku` = `p`.`id_buku`)) GROUP BY `b`.`id_buku`, `b`.`judul` ORDER BY count(`p`.`id_peminjaman`) DESC ;
-
+DROP VIEW IF EXISTS `BukuPalingBanyakDipinjam`;
+CREATE VIEW `BukuPalingBanyakDipinjam` AS 
+SELECT b.`id_buku`, b.`judul`, COUNT(p.`id_peminjaman`) AS `total_dipinjam` 
+FROM `buku` b 
+JOIN `peminjaman` p ON b.`id_buku` = p.`id_buku`
+GROUP BY b.`id_buku`, b.`judul` 
+ORDER BY `total_dipinjam` DESC;
 --
 -- Indexes for dumped tables
 --
