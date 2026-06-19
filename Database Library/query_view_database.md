@@ -193,3 +193,115 @@ db.ulasan.countDocuments()
    db.ulasan.find().pretty()
    ```
 4. Tunjukkan dokumen ulasan baru beserta tag/rating yang di-input dari API client tadi sudah berhasil tersimpan di koleksi MongoDB.
+
+---
+
+## 📥 Cara Input Data (INSERT / CREATE)
+
+### 1. MySQL (Input ke Semua Tabel)
+
+Berikut adalah contoh syntax SQL `INSERT` untuk memasukkan data baru ke dalam setiap tabel di MySQL:
+
+#### a. Tabel `pengarang`
+```sql
+INSERT INTO pengarang (nama, biografi) 
+VALUES ('Pramoedya Ananta Toer', 'Salah satu sastrawan besar Indonesia yang menulis Bumi Manusia.');
+```
+
+#### b. Tabel `kategori`
+```sql
+INSERT INTO kategori (nama_kategori, deskripsi) 
+VALUES ('Mystery', 'Kisah fiksi yang berfokus pada penyelidikan suatu kejahatan atau teka-teki.');
+```
+
+#### c. Tabel `buku`
+```sql
+INSERT INTO buku (isbn, judul, tahun_terbit, penerbit, stok, id_pengarang) 
+VALUES ('9789799731234', 'Bumi Manusia', 1980, 'Lentera Dipantara', 10, 1);
+```
+*(Catatan: pastikan `id_pengarang` bernilai sesuai dengan ID pengarang yang ada di tabel `pengarang`)*
+
+#### d. Tabel `buku_kategori` (Relasi Many-to-Many)
+```sql
+INSERT INTO buku_kategori (id_buku, id_kategori) 
+VALUES (1, 1);
+```
+*(Catatan: pastikan `id_buku` dan `id_kategori` yang di-input sudah terdaftar di tabel masing-masing)*
+
+#### e. Tabel `anggota`
+```sql
+INSERT INTO anggota (nama, alamat, no_telepon, email, tanggal_daftar, status) 
+VALUES ('Budi Santoso', 'Surabaya', '081234567890', 'budi.santoso@email.com', CURDATE(), 'aktif');
+```
+
+#### f. Tabel `pustakawan`
+```sql
+INSERT INTO pustakawan (nama, username, password_hash) 
+VALUES ('Marcus Rashford', 'm.rashford10', 'hashedpassword123456');
+```
+
+#### g. Tabel `peminjaman`
+```sql
+INSERT INTO peminjaman (id_anggota, id_buku, id_petugas, tgl_pinjam, tgl_kembali_rencana, status) 
+VALUES (1, 1, 1, CURDATE(), DATE_ADD(CURDATE(), INTERVAL 7 DAY), 'dipinjam');
+```
+
+#### h. Tabel `denda`
+```sql
+INSERT INTO denda (id_peminjaman, jumlah_denda, tgl_bayar, status_bayar) 
+VALUES (1, 2000.00, NULL, 'belum_bayar');
+```
+*(Catatan: pastikan `id_peminjaman` sesuai dengan id transaksi peminjaman yang aktif)*
+
+#### i. Tabel `riwayat_aktivitas` (Opsional/Manual)
+*Sebenarnya diisi otomatis oleh trigger, namun jika ingin di-input manual:*
+```sql
+INSERT INTO riwayat_aktivitas (id_anggota, tipe_aksi, detail, timestamp) 
+VALUES (1, 'login', 'Anggota melakukan login ke sistem', NOW());
+```
+
+---
+
+### 2. MongoDB (Input ke Koleksi Ulasan)
+
+MongoDB menggunakan konsep dokumen (JSON/BSON). Berikut adalah perintah untuk memasukkan ulasan baru ke koleksi `ulasan`:
+
+```javascript
+db.ulasan.insertOne({
+  id_anggota: "1",
+  nama_anggota: "Muhamad Nasrulhaq",
+  id_buku: "1",
+  judul_buku: "Hujan",
+  rating: 5,
+  teks_ulasan: "Sangat direkomendasikan untuk dibaca berulang kali!",
+  tgl_ulasan: new Date().toISOString(),
+  tag: ["rekomendasi", "fiksi", "terbaik"]
+})
+```
+
+Atau untuk memasukkan beberapa data sekaligus (`insertMany`):
+
+```javascript
+db.ulasan.insertMany([
+  {
+    id_anggota: "2",
+    nama_anggota: "Riezco Eka Bayu Witantra",
+    id_buku: "21",
+    judul_buku: "Bumi",
+    rating: 4,
+    teks_ulasan: "Petualangan fantastis di dunia paralel.",
+    tgl_ulasan: new Date().toISOString(),
+    tag: ["fantasy", "adventure"]
+  },
+  {
+    id_anggota: "3",
+    nama_anggota: "Daffa Ulhaq Fadhlurrahman",
+    id_buku: "11",
+    judul_buku: "Dilan 1990",
+    rating: 5,
+    teks_ulasan: "Suka sekali dengan gombalan Dilan.",
+    tgl_ulasan: new Date().toISOString(),
+    tag: ["romance", "populer"]
+  }
+])
+```
