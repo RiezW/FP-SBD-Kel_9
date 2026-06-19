@@ -91,7 +91,7 @@ Database dibangun menggunakan **MySQL (MariaDB 10.4.32)** dan di-_export_ melalu
 
 Database `library_kel9` terdiri dari **9 tabel** dengan relasi yang terdefinisi melalui _foreign key constraints_.
 
-![assets/ERD.png](assets/ERD.png)
+![assets/ERD1.png](assets/ERD1.png)
 
 ### Deskripsi Tabel
 
